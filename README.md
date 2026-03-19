@@ -22,12 +22,14 @@ Named after **Himeno** from *Chainsaw Man*. Because she deserved better. Period.
 
 ## 🔗 The Universe
 
-| Site | Description | Link |
-|------|-------------|------|
-| ⛩️ **HimmyAnime** | Anime discovery & browsing | [anime-dummy.vercel.app](https://anime-dummy.vercel.app/) |
-| 📖 **HimmyManga** | Manga reading & exploration | [himmy-manga.vercel.app](https://himmy-manga.vercel.app/) |
-| 📺 **HimmyTV** | Curated entertainment & streaming | [himmy-tv.vercel.app](https://himmy-tv.vercel.app/) |
-| 🎵 **OxcyMusic** | Music discovery & vibes | [oxcy-music.vercel.app](https://oxcy-music.vercel.app/) |
+| Site | Description |
+|------|-------------|
+| ⛩️ **HimmyAnime** | Anime discovery & browsing |
+| 📖 **HimmyManga** | Manga reading & exploration |
+| 📺 **HimmyTV** | Curated entertainment & streaming |
+| 🎵 **OxcyMusic** | Music discovery & vibes |
+
+Visit the hub → **[himmy-hub.vercel.app](https://himmy-hub.vercel.app/)**
 
 ---
 
