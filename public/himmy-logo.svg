@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="HimmyHub">
+  <defs>
+    <!-- Background gradient -->
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0e0b18"/>
+      <stop offset="100%" stop-color="#12101f"/>
+    </linearGradient>
+    <!-- Glow filter for the accent -->
+    <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="1.5" result="coloredBlur"/>
+      <feMerge>
+        <feMergeNode in="coloredBlur"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <!-- Rounded square background -->
+  <rect width="64" height="64" rx="14" fill="url(#bg)"/>
+
+  <!-- Subtle inner border -->
+  <rect x="1.5" y="1.5" width="61" height="61" rx="13" fill="none" stroke="#ffffff08" stroke-width="1"/>
+
+  <!-- H — left vertical -->
+  <rect x="12" y="14" width="9" height="36" rx="2.5" fill="#ddd6f3"/>
+  <!-- H — right vertical -->
+  <rect x="43" y="14" width="9" height="36" rx="2.5" fill="#ddd6f3"/>
+  <!-- H — crossbar -->
+  <rect x="12" y="27" width="40" height="10" rx="2.5" fill="#ddd6f3"/>
+
+  <!-- Diagonal slash accent (crimson/pink — Himeno palette) -->
+  <line x1="38" y1="11" x2="52" y2="53" stroke="#e85c8a" stroke-width="3" stroke-linecap="round" filter="url(#glow)"/>
+
+  <!-- Tiny sakura dot cluster (top-left corner accent) -->
+  <circle cx="10" cy="10" r="1.4" fill="#e85c8a" opacity="0.9"/>
+  <circle cx="14" cy="7"  r="1"   fill="#e85c8a" opacity="0.55"/>
+  <circle cx="7"  cy="13" r="0.9" fill="#e85c8a" opacity="0.45"/>
+</svg>

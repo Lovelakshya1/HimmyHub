@@ -1,0 +1,7 @@
+# robots.txt — HimmyHub
+# https://himmy-hub.vercel.app
+
+User-agent: *
+Allow: /
+
+Sitemap: https://himmy-hub.vercel.app/sitemap.xml
