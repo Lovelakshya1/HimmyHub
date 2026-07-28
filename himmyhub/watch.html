@@ -1,282 +1,529 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Anikoto Stream Tester (AniKotoAPI Logic)</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniKoto Watch - ID Resolver</title>
     <style>
-        :root {
-            --bg: #0a0a0f;
-            --card: rgba(255,255,255,0.04);
-            --border: rgba(255,255,255,0.08);
-            --accent: #6366f1;
-            --accent-glow: rgba(99,102,241,0.25);
-            --text: #e2e8f0;
-            --muted: rgba(255,255,255,0.45);
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
         }
-        *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-            padding: 24px;
-        }
-        h1 {
-            font-size: 1.5rem;
-            font-weight: 800;
-            letter-spacing: -0.02em;
-            background: linear-gradient(135deg, #818cf8, #6366f1, #a78bfa);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 6px;
-        }
-        .subtitle { color: var(--muted); font-size: 0.8rem; margin-bottom: 24px; }
 
-        .controls {
+        body {
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1410 100%);
+            color: #e8dcc8;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            border-bottom: 2px solid #b8860b;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            color: #ffd700;
+            text-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+            margin-bottom: 10px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .subtitle {
+            color: #a0826d;
+            font-size: 0.9em;
+            font-style: italic;
+        }
+
+        /* Input Section */
+        .input-section {
+            background: rgba(30, 20, 15, 0.8);
+            border: 2px solid #b8860b;
+            border-radius: 8px;
+            padding: 30px;
+            margin-bottom: 40px;
+            backdrop-filter: blur(10px);
+        }
+
+        .input-group {
             display: flex;
-            flex-wrap: wrap;
-            gap: 12px;
-            align-items: flex-end;
+            gap: 15px;
             margin-bottom: 20px;
+            align-items: center;
         }
-        .field { display: flex; flex-direction: column; gap: 4px; }
-        .field label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); }
-        .field input, .field select {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 10px 14px;
-            color: var(--text);
-            font-size: 0.9rem;
-            font-family: 'Inter', sans-serif;
+
+        label {
+            color: #ffd700;
+            font-weight: 600;
+            min-width: 100px;
+        }
+
+        input[type="number"] {
+            flex: 1;
+            padding: 12px 16px;
+            background: rgba(10, 10, 10, 0.9);
+            border: 2px solid #8b6914;
+            border-radius: 4px;
+            color: #e8dcc8;
+            font-size: 1em;
+            transition: all 0.3s ease;
+        }
+
+        input[type="number"]:focus {
             outline: none;
-            transition: border-color 0.2s;
-            width: 160px;
+            border-color: #ffd700;
+            box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
         }
-        .field input:focus, .field select:focus { border-color: var(--accent); }
 
         button {
-            padding: 10px 20px;
-            border-radius: 10px;
+            padding: 12px 30px;
+            background: linear-gradient(135deg, #b8860b, #ffd700);
+            color: #1a1410;
             border: none;
-            font-family: 'Inter', sans-serif;
-            font-weight: 700;
-            font-size: 0.85rem;
+            border-radius: 4px;
+            font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
-        }
-        .btn-primary {
-            background: var(--accent);
-            color: #fff;
-            box-shadow: 0 0 20px var(--accent-glow);
-        }
-        .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 0 30px var(--accent-glow); }
-        .btn-secondary {
-            background: var(--card);
-            color: var(--text);
-            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            font-size: 1em;
         }
 
-        .log-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px 16px;
-            margin-bottom: 20px;
-            font-size: 0.78rem;
-            line-height: 1.7;
-            color: var(--muted);
-            max-height: 180px;
-            overflow-y: auto;
-            font-family: 'JetBrains Mono', monospace;
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3);
         }
-        .log-box .ok { color: #34d399; }
-        .log-box .err { color: #f87171; }
-        .log-box .info { color: #60a5fa; }
 
-        .urls-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            margin-bottom: 20px;
+        button:active {
+            transform: translateY(0);
         }
-        .url-card {
-            flex: 1;
-            min-width: 260px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 14px;
-            padding: 14px 16px;
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
         }
-        .url-card h3 {
-            font-size: 0.75rem;
-            font-weight: 700;
+
+        /* Status Messages */
+        .status {
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-top: 15px;
+            font-size: 0.95em;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.loading {
+            background: rgba(184, 134, 11, 0.2);
+            color: #ffd700;
+            border-left: 4px solid #ffd700;
+        }
+
+        .status.success {
+            background: rgba(34, 139, 34, 0.2);
+            color: #90ee90;
+            border-left: 4px solid #90ee90;
+        }
+
+        .status.error {
+            background: rgba(220, 20, 60, 0.2);
+            color: #ff6b6b;
+            border-left: 4px solid #ff6b6b;
+        }
+
+        .id-display {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .id-card {
+            background: rgba(10, 10, 10, 0.9);
+            border: 1px solid #8b6914;
+            border-radius: 4px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .id-card-label {
+            color: #a0826d;
+            font-size: 0.85em;
             text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--accent);
             margin-bottom: 8px;
         }
-        .url-card code {
-            display: block;
-            word-break: break-all;
-            font-size: 0.75rem;
-            color: var(--text);
-            background: rgba(0,0,0,0.3);
-            padding: 8px 10px;
+
+        .id-card-value {
+            color: #ffd700;
+            font-size: 1.8em;
+            font-weight: bold;
+            font-family: 'Courier New', monospace;
+        }
+
+        /* Players Section */
+        .players-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .player-container {
+            background: rgba(30, 20, 15, 0.9);
+            border: 2px solid #b8860b;
             border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+        }
+
+        .player-container:hover {
+            border-color: #ffd700;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.15);
+        }
+
+        .player-header {
+            background: linear-gradient(90deg, #1a1410, #2a1f15);
+            border-bottom: 2px solid #b8860b;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .player-name {
+            color: #ffd700;
+            font-weight: 600;
+            font-size: 1.1em;
+        }
+
+        .player-badge {
+            background: rgba(255, 215, 0, 0.1);
+            color: #ffd700;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+        }
+
+        .player-frame {
+            width: 100%;
+            height: 500px;
+            background: #000;
+            border: none;
+        }
+
+        .player-url {
+            padding: 15px;
+            background: rgba(10, 10, 10, 0.8);
+            border-top: 1px solid #8b6914;
+        }
+
+        .url-label {
+            color: #a0826d;
+            font-size: 0.8em;
+            text-transform: uppercase;
             margin-bottom: 8px;
         }
 
-        .players-row {
-            display: flex;
-            gap: 16px;
-            flex-wrap: wrap;
+        .url-text {
+            background: rgba(0, 0, 0, 0.9);
+            border: 1px solid #8b6914;
+            padding: 10px 12px;
+            border-radius: 4px;
+            color: #e8dcc8;
+            font-size: 0.85em;
+            font-family: 'Courier New', monospace;
+            word-break: break-all;
+            overflow-x: auto;
         }
-        .player-box {
-            flex: 1;
-            min-width: 340px;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            overflow: hidden;
+
+        .copy-btn {
+            padding: 8px 16px;
+            background: rgba(184, 134, 11, 0.3);
+            color: #ffd700;
+            border: 1px solid #b8860b;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85em;
+            margin-top: 10px;
+            transition: all 0.3s ease;
         }
-        .player-box .player-label {
-            padding: 10px 16px;
-            font-size: 0.75rem;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--accent);
-            border-bottom: 1px solid var(--border);
-            display: flex;
-            align-items: center;
-            gap: 6px;
+
+        .copy-btn:hover {
+            background: rgba(184, 134, 11, 0.5);
         }
-        .player-box .player-label .pill {
-            background: var(--accent);
-            color: #fff;
-            padding: 2px 8px;
-            border-radius: 6px;
-            font-size: 0.65rem;
+
+        .disabled-state {
+            opacity: 0.5;
+            pointer-events: none;
         }
-        .player-box iframe {
-            width: 100%;
-            aspect-ratio: 16/9;
-            border: none;
+
+        .error-box {
+            background: rgba(220, 20, 60, 0.15);
+            border: 2px solid #ff6b6b;
+            border-radius: 8px;
+            padding: 20px;
+            color: #ff6b6b;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error-box.show {
             display: block;
-            background: #000;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 215, 0, 0.3);
+            border-top-color: #ffd700;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.8em;
+            }
+
+            .input-group {
+                flex-direction: column;
+            }
+
+            label {
+                min-width: unset;
+            }
+
+            .players-section {
+                grid-template-columns: 1fr;
+            }
+
+            .player-frame {
+                height: 400px;
+            }
         }
     </style>
 </head>
 <body>
+    <div class="container">
+        <header>
+            <h1>🎬 AniKoto Watch</h1>
+            <p class="subtitle">MAL ID → AniKoto Internal ID Resolver</p>
+        </header>
 
-<h1>🎬 Anikoto Stream Tester (AniKotoAPI Logic)</h1>
-<p class="subtitle">Resolves MAL ID via anikototv.to & AniKotoAPI watch-main data-id logic</p>
+        <div class="input-section">
+            <div class="input-group">
+                <label for="malId">MAL ID:</label>
+                <input 
+                    type="number" 
+                    id="malId" 
+                    placeholder="e.g., 50265 (Chainsaw Man)"
+                    min="1"
+                >
+                <button id="resolveBtn" onclick="resolveMalId()">Resolve ID</button>
+            </div>
+            <div class="status" id="status"></div>
+            <div class="id-display" id="idDisplay"></div>
+            <div class="error-box" id="errorBox"></div>
+        </div>
 
-<div class="controls">
-    <div class="field">
-        <label>MAL ID</label>
-        <input type="number" id="malId" value="5114" placeholder="5114" />
+        <div class="players-section" id="playersSection">
+            <!-- Players will be populated here -->
+        </div>
     </div>
-    <div class="field">
-        <label>Episode</label>
-        <input type="number" id="epNum" value="1" placeholder="1" />
-    </div>
-    <div class="field">
-        <label>Language</label>
-        <select id="lang">
-            <option value="sub" selected>SUB</option>
-            <option value="dub">DUB</option>
-        </select>
-    </div>
-    <button class="btn-primary" onclick="resolveAndLoad()">🚀 Resolve & Play All</button>
-</div>
 
-<div class="log-box" id="logBox">Ready. Click "Resolve & Play All" to test s-2 and s-5 routes.</div>
+    <script>
+        // Kitsu API integration
+        const KITSU_BASE = 'https://kitsu.app/api/edge';
+        let resolvedIds = {
+            mal: null,
+            anikoto: null,
+            title: null
+        };
 
-<div class="urls-row" id="urlsRow" style="display:none;">
-    <div class="url-card">
-        <h3>🎬 MegaPlay MAL (Default)</h3>
-        <code id="malUrl">—</code>
-    </div>
-    <div class="url-card">
-        <h3>📚 s-2 Route</h3>
-        <code id="s2Url">—</code>
-    </div>
-    <div class="url-card">
-        <h3>⚡ s-5 Route</h3>
-        <code id="s5Url">—</code>
-    </div>
-</div>
+        function showStatus(message, type = 'loading') {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status show ${type}`;
+            if (type !== 'loading') {
+                setTimeout(() => status.classList.remove('show'), 5000);
+            }
+        }
 
-<div class="players-row" id="playersRow" style="display:none;">
-    <div class="player-box">
-        <div class="player-label">🎬 MegaPlay MAL (Default) <span class="pill">MAL Route</span></div>
-        <iframe id="malFrame" referrerpolicy="origin" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
-    </div>
-    <div class="player-box">
-        <div class="player-label">📚 s-2 Route <span class="pill">AniKoto s-2</span></div>
-        <iframe id="s2Frame" referrerpolicy="origin" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
-    </div>
-    <div class="player-box">
-        <div class="player-label">⚡ s-5 Route <span class="pill">AniKoto s-5</span></div>
-        <iframe id="s5Frame" referrerpolicy="origin" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
-    </div>
-</div>
+        function showError(message) {
+            const errorBox = document.getElementById('errorBox');
+            errorBox.textContent = message;
+            errorBox.classList.add('show');
+        }
 
-<script>
-    const logBox = document.getElementById('logBox');
+        function clearError() {
+            document.getElementById('errorBox').classList.remove('show');
+        }
 
-    function log(msg, type = '') {
-        const span = document.createElement('div');
-        span.className = type;
-        span.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        logBox.appendChild(span);
-        logBox.scrollTop = logBox.scrollHeight;
-    }
-
-    async function resolveAndLoad() {
-        const malId = document.getElementById('malId').value.trim();
-        const ep = document.getElementById('epNum').value.trim() || '1';
-        const lang = document.getElementById('lang').value;
-
-        if (!malId) { log('Enter a MAL ID', 'err'); return; }
-
-        log(`Resolving MAL ID ${malId} via /api/anikoto-resolve...`, 'info');
-
-        try {
-            const res = await fetch(`/api/anikoto-resolve?malId=${malId}&ep=${ep}&lang=${lang}`);
-            const data = await res.json();
-
-            if (!res.ok || !data.success) {
-                log(`Resolution error: ${data.error || 'Unknown error'}`, 'err');
+        async function resolveMalId() {
+            const malIdInput = document.getElementById('malId').value;
+            
+            if (!malIdInput || malIdInput < 1) {
+                showError('Please enter a valid MAL ID');
                 return;
             }
 
-            log(`Anime Title: ${data.title}`, 'ok');
-            log(`Anikoto Slug: ${data.slug}`, 'ok');
-            log(`Anikoto Anime ID (#watch-main data-id): ${data.animeId || 'NOT FOUND'}`, data.animeId ? 'ok' : 'err');
+            clearError();
+            showStatus('🔍 Resolving MAL ID via Kitsu...', 'loading');
+            
+            const btn = document.getElementById('resolveBtn');
+            btn.disabled = true;
 
-            document.getElementById('malUrl').textContent = data.urls.mal;
-            document.getElementById('s2Url').textContent = data.urls.s2 || 'N/A (Missing animeId)';
-            document.getElementById('s5Url').textContent = data.urls.s5 || 'N/A (Missing animeId)';
-            document.getElementById('urlsRow').style.display = 'flex';
+            try {
+                // Query Kitsu mappings with MAL ID
+                const response = await fetch(
+                    `${KITSU_BASE}/mappings?filter[externalSite]=myanimelist/anime&filter[externalId]=${malIdInput}&include=item&fields[item]=id,slug,titles,canonicalTitle`,
+                    {
+                        headers: { 'Accept': 'application/vnd.api+json' }
+                    }
+                );
 
-            document.getElementById('malFrame').src = data.urls.mal;
-            if (data.urls.s2) document.getElementById('s2Frame').src = data.urls.s2;
-            if (data.urls.s5) document.getElementById('s5Frame').src = data.urls.s5;
+                if (!response.ok) throw new Error('Kitsu API error');
 
-            document.getElementById('playersRow').style.display = 'flex';
+                const data = await response.json();
 
-            log(`Loaded iframe streams with referrerPolicy="origin"`, 'ok');
+                if (!data.data || data.data.length === 0) {
+                    throw new Error(`No mapping found for MAL ID ${malIdInput}`);
+                }
 
-        } catch (e) {
-            log(`Error: ${e.message}`, 'err');
+                // Extract anime item from included
+                const animeItem = data.included?.find(i => i.type === 'anime');
+                if (!animeItem) throw new Error('No anime data found');
+
+                const title = animeItem.attributes.canonicalTitle;
+                const kitsuId = animeItem.id;
+                
+                // For AniKoto, we'll use the slug as internal ID
+                // or derive it from title if not available
+                let anikotoId = animeItem.attributes.slug || 
+                               title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+
+                resolvedIds = {
+                    mal: Number(malIdInput),
+                    anikoto: anikotoId,
+                    kitsu: kitsuId,
+                    title: title
+                };
+
+                displayIds();
+                generatePlayers();
+                
+                showStatus(`✅ Resolved: "${title}"`, 'success');
+            } catch (error) {
+                console.error('Resolution error:', error);
+                showError(`Failed to resolve: ${error.message}`);
+            } finally {
+                btn.disabled = false;
+            }
         }
-    }
-</script>
 
+        function displayIds() {
+            const display = document.getElementById('idDisplay');
+            display.innerHTML = `
+                <div class="id-card">
+                    <div class="id-card-label">MAL ID</div>
+                    <div class="id-card-value">${resolvedIds.mal}</div>
+                </div>
+                <div class="id-card">
+                    <div class="id-card-label">AniKoto ID</div>
+                    <div class="id-card-value">${resolvedIds.anikoto}</div>
+                </div>
+                <div class="id-card">
+                    <div class="id-card-label">Kitsu ID</div>
+                    <div class="id-card-value">${resolvedIds.kitsu}</div>
+                </div>
+                <div class="id-card">
+                    <div class="id-card-label">Title</div>
+                    <div class="id-card-value" style="font-size: 1.2em;">${resolvedIds.title}</div>
+                </div>
+            `;
+        }
+
+        function generatePlayers() {
+            const section = document.getElementById('playersSection');
+            
+            // Player configurations
+            const players = [
+                {
+                    name: 'MegaPlay S-2',
+                    url: `https://megaplay.buzz/stream/s-2/${resolvedIds.anikoto}/sub?ep=1`,
+                    badge: 'Server 2'
+                },
+                {
+                    name: 'MegaPlay S-5',
+                    url: `https://megaplay.buzz/stream/s-5/${resolvedIds.anikoto}/sub?ep=1`,
+                    badge: 'Server 5'
+                },
+                {
+                    name: 'MegaPlay Default',
+                    url: `https://megaplay.buzz/stream/mal/${resolvedIds.mal}/1/sub`,
+                    badge: 'MAL Direct'
+                }
+            ];
+
+            section.innerHTML = players.map((player, idx) => `
+                <div class="player-container">
+                    <div class="player-header">
+                        <span class="player-name">${player.name}</span>
+                        <span class="player-badge">${player.badge}</span>
+                    </div>
+                    <iframe 
+                        class="player-frame"
+                        src="${player.url}"
+                        referrerpolicy="origin"
+                        allowfullscreen
+                        allow="autoplay; encrypted-media"
+                    ></iframe>
+                    <div class="player-url">
+                        <div class="url-label">Player URL</div>
+                        <div class="url-text">${player.url}</div>
+                        <button class="copy-btn" onclick="copyToClipboard('${player.url}')">📋 Copy URL</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function copyToClipboard(text) {
+            navigator.clipboard.writeText(text).then(() => {
+                showStatus('✅ URL copied to clipboard!', 'success');
+            }).catch(err => {
+                showError('Failed to copy URL');
+            });
+        }
+
+        // Allow Enter key to resolve
+        document.getElementById('malId').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') resolveMalId();
+        });
+
+        // Disable players section initially
+        document.getElementById('playersSection').classList.add('disabled-state');
+    </script>
 </body>
 </html>
