@@ -15,7 +15,7 @@ export default async function handler(req, res) {
   };
 
   try {
-    // 1. Fetch title & MAL-Sync slug mapping
+    // 1. Resolve title & MAL-Sync slug mapping
     let title = '';
     let malSyncSlug = '';
 
@@ -58,8 +58,6 @@ export default async function handler(req, res) {
       const searchRes = await fetch(searchUrl, { headers });
       if (searchRes.ok) {
         const html = await searchRes.text();
-
-        // Parse search cards: <a class="name d-title" href=".../watch/{slug}/ep-1"...>{Title}</a>
         const cardRegex = /<a\s+class="name d-title"\s+href="https?:\/\/[^/]+\/watch\/([^"/]+)\/ep-\d+"[^>]*>([\s\S]*?)<\/a>/gi;
         const matches = [...html.matchAll(cardRegex)];
 
@@ -87,99 +85,55 @@ export default async function handler(req, res) {
       }
     }
 
-    if (!slug) {
-      return res.status(404).json({ error: 'Could not resolve Anikoto slug for MAL ID ' + malId });
-    }
+    // 3. Fetch watch page / AJAX episode list to extract internal animeId and episode data-id
+    let animeId = '';
+    let epDataId = '';
 
-    // 3. Fetch watch page HTML to extract internal animeId (#watch-main data-id)
-    const watchUrl = `https://anikototv.to/watch/${slug}/ep-${ep}`;
-    let watchRes = await fetch(watchUrl, { headers });
-    let html = '';
-    if (watchRes.ok) html = await watchRes.text();
+    if (slug) {
+      const watchUrl = `https://anikototv.to/watch/${slug}/ep-${ep}`;
+      const watchRes = await fetch(watchUrl, { headers });
+      let html = '';
+      if (watchRes.ok) html = await watchRes.text();
 
-    if (!html) {
-      const altUrl = `https://anikoto.net/watch/${slug}/ep-${ep}`;
-      const altRes = await fetch(altUrl, { headers });
-      if (altRes.ok) html = await altRes.text();
-    }
+      const animeIdMatch = html.match(/id\s*=\s*"watch-main"[^>]*\bdata-id\s*=\s*"(\d+)"/) ||
+                         html.match(/data-id\s*=\s*"(\d+)"[^>]*id\s*=\s*"watch-main"/);
+      animeId = animeIdMatch?.[1] || '';
 
-    // Parse animeId specifically from #watch-main data-id
-    const animeIdMatch = html.match(/id\s*=\s*"watch-main"[^>]*\bdata-id\s*=\s*"(\d+)"/) ||
-                       html.match(/data-id\s*=\s*"(\d+)"[^>]*id\s*=\s*"watch-main"/);
-    const animeId = animeIdMatch?.[1] || '';
+      // Extract episode data-id (e.g. data-ep-id="1335" or data-ids / data-id)
+      const epMatch = html.match(new RegExp(`data-num="${ep}"[^>]*data-ep-id="(\\d+)"`)) ||
+                      html.match(new RegExp(`data-num="${ep}"[^>]*data-id="(\\d+)"`));
+      if (epMatch) epDataId = epMatch[1];
 
-    // Extract episode data-id/data-ids
-    let epDataIds = '';
-    const epMatch = html.match(new RegExp(`data-num="${ep}"[^>]*data-ids="([^"]+)"`)) ||
-                    html.match(new RegExp(`data-num="${ep}"[^>]*data-id="([^"]+)"`));
-    if (epMatch) {
-      epDataIds = epMatch[1];
-    }
-
-    // Fallback: AJAX episode list if epDataIds not found directly
-    if (!epDataIds && animeId) {
-      try {
-        const epListUrl = `https://anikototv.to/ajax/episode/list/${animeId}`;
-        const epListRes = await fetch(epListUrl, { headers });
-        if (epListRes.ok) {
-          const epListData = await epListRes.json();
-          const epListHtml = epListData.result || '';
-          const m = epListHtml.match(new RegExp(`data-num="${ep}"[^>]*data-ids="([^"]+)"`)) ||
-                    epListHtml.match(new RegExp(`data-num="${ep}"[^>]*data-id="([^"]+)"`));
-          if (m) epDataIds = m[1];
+      // AJAX episode list fallback if epDataId not in initial HTML
+      if (!epDataId && animeId) {
+        try {
+          const epListUrl = `https://anikototv.to/ajax/episode/list/${animeId}`;
+          const epListRes = await fetch(epListUrl, { headers });
+          if (epListRes.ok) {
+            const epListData = await epListRes.json();
+            const epListHtml = epListData.result || '';
+            const m = epListHtml.match(new RegExp(`data-num="${ep}"[^>]*data-ep-id="(\\d+)"`)) ||
+                      epListHtml.match(new RegExp(`data-num="${ep}"[^>]*data-id="(\\d+)"`)) ||
+                      epListHtml.match(/data-ep-id="(\d+)"/);
+            if (m) epDataId = m[1];
+          }
+        } catch (e) {
+          console.warn('AJAX ep list error:', e.message);
         }
-      } catch (e) {
-        console.warn('AJAX ep list error:', e.message);
       }
     }
 
-    // 4. Fetch server list AJAX if epDataIds found
-    let s2EmbedUrl = null;
-    let s5EmbedUrl = null;
-
-    if (epDataIds) {
-      try {
-        const serverListUrl = `https://anikototv.to/ajax/server/list?servers=${epDataIds}`;
-        const serverListRes = await fetch(serverListUrl, { headers });
-        if (serverListRes.ok) {
-          const serverData = await serverListRes.json();
-          const serverHtml = serverData.result || '';
-
-          // Parse s-2 and s-5 server linkIds
-          const s2Match = serverHtml.match(/data-sv-id="s-2"[^>]*data-link-id="([^"]+)"/) ||
-                          serverHtml.match(/data-link-id="([^"]+)"[^>]*data-sv-id="s-2"/);
-          const s5Match = serverHtml.match(/data-sv-id="s-5"[^>]*data-link-id="([^"]+)"/) ||
-                          serverHtml.match(/data-link-id="([^"]+)"[^>]*data-sv-id="s-5"/);
-
-          const s2LinkId = s2Match?.[1];
-          const s5LinkId = s5Match?.[1];
-
-          // Fetch resolved embed URLs via /ajax/server?get={linkId}
-          if (s2LinkId) {
-            const s2Res = await fetch(`https://anikototv.to/ajax/server?get=${s2LinkId}&sv=s-2`, { headers });
-            if (s2Res.ok) {
-              const s2Json = await s2Res.json();
-              s2EmbedUrl = s2Json.result?.url || null;
-            }
-          }
-
-          if (s5LinkId) {
-            const s5Res = await fetch(`https://anikototv.to/ajax/server?get=${s5LinkId}&sv=s-5`, { headers });
-            if (s5Res.ok) {
-              const s5Json = await s5Res.json();
-              s5EmbedUrl = s5Json.result?.url || null;
-            }
-          }
-        }
-      } catch (e) {
-        console.warn('Server list AJAX error:', e.message);
-      }
-    }
-
-    // Constructed routes as fallback if direct AJAX embed URLs couldn't be fetched
-    const fallbackS2 = animeId ? `https://megaplay.buzz/stream/s-2/${animeId}/${lang}?ep=${ep}` : null;
-    const fallbackS5 = animeId ? `https://megaplay.buzz/stream/s-5/${animeId}/${lang}?ep=${ep}` : null;
+    // 4. Construct exact, working Megaplay stream URLs
+    // MAL route: /stream/mal/{malId}/{ep}/{lang}
     const malUrl = `https://megaplay.buzz/stream/mal/${malId}/${ep}/${lang}`;
+
+    // s-2 route: /stream/s-2/{malId}/{lang}?ep={ep} (Uses MAL ID)
+    const s2Url = `https://megaplay.buzz/stream/s-2/${malId}/${lang}?ep=${ep}`;
+
+    // s-5 route: /stream/s-5/{epDataId}/{lang}?autostart=true (Uses Episode Data ID, e.g. 1335 for FMAB Ep 1)
+    const s5Url = epDataId
+      ? `https://megaplay.buzz/stream/s-5/${epDataId}/${lang}?autostart=true`
+      : `https://megaplay.buzz/stream/s-5/${malId}/${lang}?ep=${ep}`;
 
     return res.status(200).json({
       success: true,
@@ -187,12 +141,12 @@ export default async function handler(req, res) {
       title,
       slug,
       animeId,
-      epDataIds,
+      epDataId,
       urls: {
         mal: malUrl,
-        s2: s2EmbedUrl || fallbackS2,
-        s5: s5EmbedUrl || fallbackS5,
-        web: `https://anikototv.to/watch/${slug}/ep-${ep}`
+        s2: s2Url,
+        s5: s5Url,
+        web: slug ? `https://anikototv.to/watch/${slug}/ep-${ep}` : null
       }
     });
 
