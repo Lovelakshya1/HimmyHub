@@ -50,25 +50,39 @@ export default async function handler(req, res) {
       }
     }
 
-    // 2. Resolve watch slug
+    // 2. Resolve watch slug via Anikoto Search (/filter?keyword=...)
     let slug = malSyncSlug;
     if (!slug) {
-      const searchUrl = `https://anikototv.to/filter?keyword=${encodeURIComponent(title || malId)}`;
+      const searchTitle = title || malId;
+      const searchUrl = `https://anikototv.to/filter?keyword=${encodeURIComponent(searchTitle)}`;
       const searchRes = await fetch(searchUrl, { headers });
       if (searchRes.ok) {
         const html = await searchRes.text();
-        
-        // Target film_list-wrap or film_list container to exclude header/sidebar/spotlight
-        const searchSectionMatch = html.match(/class="film_list-wrap[\s\S]*?(?:<\/section>|<div class="sidebar"|<aside)/i) ||
-                                    html.match(/class="film-list[\s\S]*?(?:<\/section>|<div class="sidebar"|<aside)/i) ||
-                                    [html];
-        const sectionHtml = searchSectionMatch[0];
 
-        const matches = [...sectionHtml.matchAll(/href="https?:\/\/[^/]+\/watch\/([^"/]+)"/g)]
-          .concat([...sectionHtml.matchAll(/href="\/watch\/([^"/]+)"/g)]);
-          
+        // Parse search cards: <a class="name d-title" href=".../watch/{slug}/ep-1"...>{Title}</a>
+        const cardRegex = /<a\s+class="name d-title"\s+href="https?:\/\/[^/]+\/watch\/([^"/]+)\/ep-\d+"[^>]*>([\s\S]*?)<\/a>/gi;
+        const matches = [...html.matchAll(cardRegex)];
+
         if (matches.length > 0) {
-          slug = matches[0][1];
+          const normQuery = searchTitle.toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+          var bestMatchSlug = matches[0][1];
+          var bestScore = -1;
+
+          for (const m of matches) {
+            const cardSlug = m[1];
+            const cardTitle = m[2].replace(/<[^>]+>/g, '').toLowerCase().replace(/[^a-z0-9 ]/g, '').trim();
+
+            let score = 0;
+            if (cardTitle === normQuery) score = 100;
+            else if (cardTitle.startsWith(normQuery) || normQuery.startsWith(cardTitle)) score = 70;
+            else if (cardTitle.includes(normQuery) || normQuery.includes(cardTitle)) score = 40;
+
+            if (score > bestScore) {
+              bestScore = score;
+              bestMatchSlug = cardSlug;
+            }
+          }
+          slug = bestMatchSlug;
         }
       }
     }
