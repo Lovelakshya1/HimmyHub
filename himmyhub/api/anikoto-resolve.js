@@ -57,8 +57,19 @@ export default async function handler(req, res) {
       const searchRes = await fetch(searchUrl, { headers });
       if (searchRes.ok) {
         const html = await searchRes.text();
-        const matches = [...html.matchAll(/href="https?:\/\/[^/]+\/watch\/([^"/]+)"/g)];
-        if (matches.length > 0) slug = matches[0][1];
+        
+        // Target film_list-wrap or film_list container to exclude header/sidebar/spotlight
+        const searchSectionMatch = html.match(/class="film_list-wrap[\s\S]*?(?:<\/section>|<div class="sidebar"|<aside)/i) ||
+                                    html.match(/class="film-list[\s\S]*?(?:<\/section>|<div class="sidebar"|<aside)/i) ||
+                                    [html];
+        const sectionHtml = searchSectionMatch[0];
+
+        const matches = [...sectionHtml.matchAll(/href="https?:\/\/[^/]+\/watch\/([^"/]+)"/g)]
+          .concat([...sectionHtml.matchAll(/href="\/watch\/([^"/]+)"/g)]);
+          
+        if (matches.length > 0) {
+          slug = matches[0][1];
+        }
       }
     }
 
@@ -66,7 +77,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: 'Could not resolve Anikoto slug for MAL ID ' + malId });
     }
 
-    // 3. Fetch watch page HTML
+    // 3. Fetch watch page HTML to extract internal animeId (#watch-main data-id)
     const watchUrl = `https://anikototv.to/watch/${slug}/ep-${ep}`;
     let watchRes = await fetch(watchUrl, { headers });
     let html = '';
@@ -78,7 +89,7 @@ export default async function handler(req, res) {
       if (altRes.ok) html = await altRes.text();
     }
 
-    // Parse animeId from #watch-main
+    // Parse animeId specifically from #watch-main data-id
     const animeIdMatch = html.match(/id\s*=\s*"watch-main"[^>]*\bdata-id\s*=\s*"(\d+)"/) ||
                        html.match(/data-id\s*=\s*"(\d+)"[^>]*id\s*=\s*"watch-main"/);
     const animeId = animeIdMatch?.[1] || '';
