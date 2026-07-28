@@ -1,280 +1,112 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="referrer" content="origin">
-    <title>Himmy Anikoto Vercel Watch Tester</title>
-    <style>
-        :root {
-            --bg: #090d16;
-            --card: #131b2e;
-            --accent: #6366f1;
-            --text: #f8fafc;
-            --text-dim: #94a3b8;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-        body { background: var(--bg); color: var(--text); padding: 24px; display: flex; flex-direction: column; align-items: center; min-height: 100vh; }
-        .container { width: 100%; max-width: 960px; }
-        
-        header { text-align: center; margin-bottom: 24px; }
-        header h1 { font-size: 26px; font-weight: 800; background: linear-gradient(135deg, #a5b4fc, #6366f1); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
-        header p { color: var(--text-dim); font-size: 13px; margin-top: 6px; }
-        
-        .card { background: var(--card); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; padding: 20px; margin-bottom: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
-        input, select, button { background: #0b1120; border: 1px solid rgba(255,255,255,0.15); color: white; padding: 12px 14px; border-radius: 10px; font-size: 14px; outline: none; }
-        input { flex: 1; min-width: 160px; }
-        button { background: var(--accent); font-weight: 700; cursor: pointer; border: none; transition: 0.2s; }
-        button:hover { opacity: 0.9; transform: translateY(-1px); }
+'use client';
 
-        .presets { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; }
-        .preset-btn { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1); font-size: 12px; padding: 6px 12px; border-radius: 20px; }
-        .preset-btn:hover { background: rgba(255,255,255,0.15); }
+import { useState, useEffect } from 'react';
 
-        /* Server Pills Row */
-        .server-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.08); }
-        .server-pill { background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); padding: 8px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; cursor: pointer; transition: 0.2s; color: var(--text-dim); }
-        .server-pill:hover { background: rgba(99, 102, 241, 0.15); color: #a5b4fc; }
-        .server-pill.active { background: rgba(99, 102, 241, 0.25); border-color: var(--accent); color: white; font-weight: 700; box-shadow: 0 0 12px rgba(99, 102, 241, 0.4); }
+export default function VercelWatchTester() {
+  const [malId, setMalId] = useState(5114);
+  const [title, setTitle] = useState('Fullmetal Alchemist Brotherhood');
+  const [ep, setEp] = useState(1);
+  const [lang, setLang] = useState('sub');
 
-        .player-container { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 16px; overflow: hidden; border: 1px solid rgba(255,255,255,0.12); margin-top: 14px; position: relative; }
-        iframe { width: 100%; height: 100%; border: none; }
+  const [metaInfo, setMetaInfo] = useState('Click "Resolve & Watch" to load servers...');
+  const [servers, setServers] = useState([]);
+  const [activeServerIdx, setActiveServerIdx] = useState(0);
+  const [loading, setLoading] = useState(false);
 
-        .meta-box { background: rgba(0,0,0,0.3); padding: 12px; border-radius: 10px; font-family: monospace; font-size: 12px; color: #38bdf8; word-break: break-all; margin-top: 10px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <header>
-            <h1>⚡ Himmy Anikoto Vercel Watch Tester</h1>
-            <p>Title Scoring Algorithm • Zero-CORS Resolver • Referrer: origin</p>
-        </header>
+  async function resolveWatchPage() {
+    setLoading(true);
+    setMetaInfo('Resolving via Next.js Serverless API (Zero CORS Error)...');
 
-        <div class="card">
-            <div class="row">
-                <input type="number" id="malId" placeholder="MAL ID (e.g. 5114)" value="5114">
-                <input type="text" id="animeTitle" placeholder="Anime Title (Optional)" value="Fullmetal Alchemist Brotherhood">
-                <input type="number" id="epNum" placeholder="Ep #" value="1" style="width: 80px;">
-                <select id="lang">
-                    <option value="sub">SUB</option>
-                    <option value="dub">DUB</option>
-                </select>
-                <button onclick="runWatchPage()">Resolve & Watch</button>
+    try {
+      const query = `malId=${malId}&title=${encodeURIComponent(title)}&ep=${ep}&lang=${lang}`;
+      const res = await fetch(`/api/anikoto-resolver?${query}`);
+      const data = await res.json();
+
+      if (!data.success) {
+        alert('Error: ' + data.error);
+        setMetaInfo('Error: ' + data.error);
+        return;
+      }
+
+      setMetaInfo(`MAL ID: ${data.malId} | Title: "${data.searchTitle}" | Resolved Anime ID: ${data.animeId || 'Not Found'} | Slug: ${data.slug || 'Not Found'}`);
+      setServers(data.servers || []);
+      setActiveServerIdx(0);
+    } catch (e) {
+      alert('Failed: ' + e.message);
+      setMetaInfo('Failed: ' + e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    resolveWatchPage();
+  }, []);
+
+  return (
+    <div style={{ background: '#090d16', color: '#f8fafc', minHeight: '100vh', padding: 24, fontFamily: 'system-ui, sans-serif' }}>
+      <div style={{ maxWidth: 960, margin: '0 auto' }}>
+        <h1 style={{ color: '#818cf8', textAlign: 'center', margin: '0 0 8px' }}>⚡ Vercel Anikoto Watch Tester</h1>
+        <p style={{ color: '#94a3b8', textAlign: 'center', margin: '0 0 24px', fontSize: 14 }}>Next.js Serverless API Resolver • Zero CORS Error • s-2 & s-5 Supported</p>
+
+        <div style={{ background: '#131b2e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 20, marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+            <input type="number" value={malId} onChange={e => setMalId(e.target.value)} placeholder="MAL ID" style={inputStyle} />
+            <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Title" style={{ ...inputStyle, flex: 2 }} />
+            <input type="number" value={ep} onChange={e => setEp(e.target.value)} placeholder="Ep" style={{ ...inputStyle, width: 80 }} />
+            <select value={lang} onChange={e => setLang(e.target.value)} style={inputStyle}>
+              <option value="sub">SUB</option>
+              <option value="dub">DUB</option>
+            </select>
+            <button onClick={resolveWatchPage} disabled={loading} style={btnStyle}>
+              {loading ? 'Resolving...' : 'Resolve & Watch'}
+            </button>
+          </div>
+
+          {servers.length > 0 && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 16, paddingTop: 16, borderTop: '1px solid rgba(255,255,255,0.08)' }}>
+              {servers.map((srv, idx) => (
+                <button
+                  key={srv.id}
+                  onClick={() => setActiveServerIdx(idx)}
+                  style={{
+                    padding: '8px 14px',
+                    borderRadius: 20,
+                    fontSize: 13,
+                    fontWeight: idx === activeServerIdx ? 700 : 500,
+                    background: idx === activeServerIdx ? 'rgba(99, 102, 241, 0.25)' : 'rgba(255,255,255,0.04)',
+                    borderColor: idx === activeServerIdx ? '#6366f1' : 'rgba(255,255,255,0.12)',
+                    color: idx === activeServerIdx ? '#fff' : '#94a3b8',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {srv.name}
+                </button>
+              ))}
             </div>
-
-            <div class="presets">
-                <span style="font-size: 12px; color: var(--text-dim); align-self: center;">Presets:</span>
-                <button class="preset-btn" onclick="setPreset(5114, 'Fullmetal Alchemist Brotherhood', 1)">FMAB (MAL 5114)</button>
-                <button class="preset-btn" onclick="setPreset(21, 'One Piece', 100)">One Piece (MAL 21)</button>
-                <button class="preset-btn" onclick="setPreset(47778, 'Demon Slayer', 1)">Demon Slayer (MAL 47778)</button>
-                <button class="preset-btn" onclick="setPreset(52034, 'Jujutsu Kaisen 2nd Season', 1)">JJK S2 (MAL 52034)</button>
-            </div>
-
-            <div class="server-pills" id="serverPillsRow" style="display: none;">
-                <!-- Server pills populated dynamically -->
-            </div>
+          )}
         </div>
 
-        <div class="card" id="infoCard" style="display: none;">
-            <div class="meta-box" id="resMeta">Resolving title and Anikoto animeId...</div>
+        <div style={{ background: '#131b2e', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 16, padding: 16, marginBottom: 20, fontFamily: 'monospace', fontSize: 12, color: '#38bdf8' }}>
+          {metaInfo}
         </div>
 
-        <div class="card">
-            <div class="player-container">
-                <iframe id="playerIframe" referrerpolicy="origin" allowfullscreen allow="autoplay; encrypted-media"></iframe>
-            </div>
+        <div style={{ aspectRatio: '16/9', background: '#000', borderRadius: 16, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.12)' }}>
+          {servers[activeServerIdx] && (
+            <iframe
+              key={servers[activeServerIdx].url}
+              src={servers[activeServerIdx].url}
+              referrerPolicy="origin"
+              allowFullScreen
+              allow="autoplay; encrypted-media"
+              style={{ width: '100%', height: '100%', border: 'none' }}
+            />
+          )}
         </div>
+      </div>
     </div>
+  );
+}
 
-    <script>
-        let currentServers = [];
-
-        function setPreset(malId, title, ep) {
-            document.getElementById('malId').value = malId;
-            document.getElementById('animeTitle').value = title;
-            document.getElementById('epNum').value = ep;
-            runWatchPage();
-        }
-
-        function normalize(s) {
-            return (s || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
-        }
-
-        // Robust CORS-safe fetch helper that bypasses browser devtools CORS error
-        async function fetchHtmlCorsSafe(targetUrl) {
-            try {
-                // Try direct fetch first
-                const res = await fetch(targetUrl);
-                if (res.ok) return await res.text();
-            } catch(e) {}
-
-            // Fallback 1: Try /api/proxy (Next.js serverless proxy if deployed on Next.js)
-            try {
-                const proxyRes = await fetch(`/api/proxy?url=${encodeURIComponent(targetUrl)}`);
-                if (proxyRes.ok) return await proxyRes.text();
-            } catch(e) {}
-
-            // Fallback 2: Try Teramoto Vercel Scraper API
-            try {
-                if (targetUrl.includes('/search?keyword=')) {
-                    const kw = targetUrl.split('/search?keyword=')[1];
-                    const vRes = await fetch(`https://anikoto-scrap-api.vercel.app/api/search?keyword=${kw}`);
-                    if (vRes.ok) {
-                        const j = await vRes.json();
-                        const results = j.data?.results || [];
-                        if (results.length > 0) {
-                            return results.map(r => `<a class="name d-title" href="https://anikoto.net/watch/${r.slug}/ep-1" data-jp="${r.titleJp || ''}">${r.title}</a>`).join('');
-                        }
-                    }
-                }
-            } catch(e) {}
-
-            return '';
-        }
-
-        async function fetchAniZipTitle(malId) {
-            try {
-                const res = await fetch(`https://api.ani.zip/mappings?mal_id=${malId}`);
-                if (res.ok) {
-                    const json = await res.json();
-                    return json?.titles?.en || json?.titles?.['x-jat'] || null;
-                }
-            } catch(e) {}
-            return null;
-        }
-
-        async function resolveAnikotoAnimeId(queryTitle) {
-            const searchUrl = `https://anikoto.net/search?keyword=${encodeURIComponent(queryTitle)}`;
-            const html = await fetchHtmlCorsSafe(searchUrl);
-
-            const cardRegex = /<a[^>]*class="[^"]*d-title[^\"]*"[^>]*href="https:\/\/anikoto\.net\/watch\/([^"/]+)[^"]*"[^>]*data-jp="([^"]*)"[^>]*>([^<]+)<\/a>/gi;
-            const candidates = [];
-            let match;
-
-            while ((match = cardRegex.exec(html)) !== null) {
-                candidates.push({ slug: match[1], dataJp: match[2], title: match[3].trim() });
-            }
-
-            if (candidates.length === 0) {
-                const simpleRegex = /href="https:\/\/anikoto\.net\/watch\/([^"/]+)/gi;
-                const seen = new Set();
-                while ((match = simpleRegex.exec(html)) !== null) {
-                    if (!seen.has(match[1])) {
-                        seen.add(match[1]);
-                        candidates.push({ slug: match[1], dataJp: '', title: match[1].replace(/-/g, ' ') });
-                    }
-                }
-            }
-
-            const normQuery = normalize(queryTitle);
-
-            const scored = candidates.map(c => {
-                const normTitle = normalize(c.title);
-                const normJp = normalize(c.dataJp);
-                let score = 0;
-
-                if (normTitle === normQuery || normJp === normQuery) score += 200;
-                if (normTitle.startsWith(normQuery) || normQuery.startsWith(normTitle)) score += 50;
-                if (normTitle.includes(normQuery) || normQuery.includes(normTitle)) score += 30;
-
-                if (normTitle.includes('movie') || normTitle.includes('special') || normTitle.includes('episode of') || normTitle.includes('ova')) {
-                    score -= 100;
-                }
-                return { ...c, score };
-            });
-
-            scored.sort((a, b) => b.score - a.score);
-            const winner = scored[0];
-
-            if (!winner) return null;
-
-            // Fetch Winner Watch Page
-            const watchHtml = await fetchHtmlCorsSafe(`https://anikoto.net/watch/${winner.slug}`);
-            const animeIdMatch = watchHtml.match(/id="watch-main"[^>]*data-id="([^"]+)"/) || watchHtml.match(/data-id="(\d+)"/);
-            const animeId = animeIdMatch ? (animeIdMatch[1] || animeIdMatch[2]) : null;
-
-            return { slug: winner.slug, animeId };
-        }
-
-        async function runWatchPage() {
-            const malId = document.getElementById('malId').value.trim();
-            const fallbackTitle = document.getElementById('animeTitle').value.trim();
-            const ep = document.getElementById('epNum').value || 1;
-            const lang = document.getElementById('lang').value;
-
-            document.getElementById('infoCard').style.display = 'block';
-            document.getElementById('resMeta').innerText = 'Resolving AniZip title & Anikoto internal animeId...';
-
-            // Step 1: AniZip title mapping
-            const officialTitle = await fetchAniZipTitle(malId) || fallbackTitle;
-
-            // Step 2: Anikoto animeId resolution
-            const anikotoData = await resolveAnikotoAnimeId(officialTitle);
-
-            // Step 3: Construct server pills
-            currentServers = [
-                {
-                    id: 'megaplay_default',
-                    name: '🎬 MegaPlay (Default MAL)',
-                    url: `https://megaplay.buzz/stream/mal/${malId}/${ep}/${lang}`
-                }
-            ];
-
-            if (anikotoData && anikotoData.animeId) {
-                currentServers.push({
-                    id: 'anikoto_s2',
-                    name: '📚 AniKoto (s-2 Route)',
-                    url: `https://megaplay.buzz/stream/s-2/${anikotoData.animeId}/${lang}?ep=${ep}`
-                });
-                currentServers.push({
-                    id: 'anikoto_s5',
-                    name: '⚡ AniKoto (s-5 Route)',
-                    url: `https://megaplay.buzz/stream/s-5/${anikotoData.animeId}/${lang}?ep=${ep}`
-                });
-                currentServers.push({
-                    id: 'anikoto_web',
-                    name: '🌐 AniKoto Web',
-                    url: `https://anikoto.net/watch/${anikotoData.slug}/ep-${ep}`
-                });
-            }
-
-            // Display Meta Info
-            document.getElementById('resMeta').innerHTML = 
-                `<b>MAL ID:</b> ${malId} | <b>Title:</b> "${officialTitle}"<br>` +
-                `<b>Resolved Anikoto Slug:</b> ${anikotoData?.slug || 'Using Teramoto Vercel Scraper API'}<br>` +
-                `<b>Internal Anime ID:</b> ${anikotoData?.animeId || 'Resolved'}<br>` +
-                `<b>Active Server URL:</b> ${currentServers[0].url}`;
-
-            // Render Server Pills
-            renderServerPills(0);
-        }
-
-        function renderServerPills(activeIndex) {
-            const row = document.getElementById('serverPillsRow');
-            row.style.display = 'flex';
-            row.innerHTML = '';
-
-            currentServers.forEach((srv, idx) => {
-                const btn = document.createElement('button');
-                btn.className = `server-pill ${idx === activeIndex ? 'active' : ''}`;
-                btn.innerText = srv.name;
-                btn.onclick = () => {
-                    renderServerPills(idx);
-                    loadIframeUrl(srv.url);
-                };
-                row.appendChild(btn);
-            });
-
-            loadIframeUrl(currentServers[activeIndex].url);
-        }
-
-        function loadIframeUrl(embedUrl) {
-            const iframe = document.getElementById('playerIframe');
-            iframe.src = embedUrl;
-        }
-
-        window.onload = () => runWatchPage();
-    </script>
-</body>
-</html>
+const inputStyle = { background: '#0b1120', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', padding: '10px 14px', borderRadius: 10, fontSize: 14 };
+const btnStyle = { background: '#6366f1', color: '#fff', border: 'none', padding: '10px 18px', borderRadius: 10, fontWeight: 700, cursor: 'pointer' };
