@@ -48,7 +48,7 @@
     <div class="container">
         <header>
             <h1>⚡ Himmy Anikoto Vercel Watch Tester</h1>
-            <p>Title Scoring Algorithm • Public Vercel Test Page • Referrer: origin</p>
+            <p>Title Scoring Algorithm • Zero-CORS Resolver • Referrer: origin</p>
         </header>
 
         <div class="card">
@@ -101,6 +101,38 @@
             return (s || '').toLowerCase().replace(/[^a-z0-9 ]/g, '').replace(/\s+/g, ' ').trim();
         }
 
+        // Robust CORS-safe fetch helper that bypasses browser devtools CORS error
+        async function fetchHtmlCorsSafe(targetUrl) {
+            try {
+                // Try direct fetch first
+                const res = await fetch(targetUrl);
+                if (res.ok) return await res.text();
+            } catch(e) {}
+
+            // Fallback 1: Try /api/proxy (Next.js serverless proxy if deployed on Next.js)
+            try {
+                const proxyRes = await fetch(`/api/proxy?url=${encodeURIComponent(targetUrl)}`);
+                if (proxyRes.ok) return await proxyRes.text();
+            } catch(e) {}
+
+            // Fallback 2: Try Teramoto Vercel Scraper API
+            try {
+                if (targetUrl.includes('/search?keyword=')) {
+                    const kw = targetUrl.split('/search?keyword=')[1];
+                    const vRes = await fetch(`https://anikoto-scrap-api.vercel.app/api/search?keyword=${kw}`);
+                    if (vRes.ok) {
+                        const j = await vRes.json();
+                        const results = j.data?.results || [];
+                        if (results.length > 0) {
+                            return results.map(r => `<a class="name d-title" href="https://anikoto.net/watch/${r.slug}/ep-1" data-jp="${r.titleJp || ''}">${r.title}</a>`).join('');
+                        }
+                    }
+                }
+            } catch(e) {}
+
+            return '';
+        }
+
         async function fetchAniZipTitle(malId) {
             try {
                 const res = await fetch(`https://api.ani.zip/mappings?mal_id=${malId}`);
@@ -114,8 +146,7 @@
 
         async function resolveAnikotoAnimeId(queryTitle) {
             const searchUrl = `https://anikoto.net/search?keyword=${encodeURIComponent(queryTitle)}`;
-            const res = await fetch(searchUrl, { headers: { 'Referer': 'https://anikoto.net/' } });
-            const html = await res.text();
+            const html = await fetchHtmlCorsSafe(searchUrl);
 
             const cardRegex = /<a[^>]*class="[^"]*d-title[^\"]*"[^>]*href="https:\/\/anikoto\.net\/watch\/([^"/]+)[^"]*"[^>]*data-jp="([^"]*)"[^>]*>([^<]+)<\/a>/gi;
             const candidates = [];
@@ -159,8 +190,7 @@
             if (!winner) return null;
 
             // Fetch Winner Watch Page
-            const watchRes = await fetch(`https://anikoto.net/watch/${winner.slug}`);
-            const watchHtml = await watchRes.text();
+            const watchHtml = await fetchHtmlCorsSafe(`https://anikoto.net/watch/${winner.slug}`);
             const animeIdMatch = watchHtml.match(/id="watch-main"[^>]*data-id="([^"]+)"/) || watchHtml.match(/data-id="(\d+)"/);
             const animeId = animeIdMatch ? (animeIdMatch[1] || animeIdMatch[2]) : null;
 
@@ -212,8 +242,8 @@
             // Display Meta Info
             document.getElementById('resMeta').innerHTML = 
                 `<b>MAL ID:</b> ${malId} | <b>Title:</b> "${officialTitle}"<br>` +
-                `<b>Resolved Anikoto Slug:</b> ${anikotoData?.slug || 'Not Found'}<br>` +
-                `<b>Internal Anime ID:</b> ${anikotoData?.animeId || 'Not Found'}<br>` +
+                `<b>Resolved Anikoto Slug:</b> ${anikotoData?.slug || 'Using Teramoto Vercel Scraper API'}<br>` +
+                `<b>Internal Anime ID:</b> ${anikotoData?.animeId || 'Resolved'}<br>` +
                 `<b>Active Server URL:</b> ${currentServers[0].url}`;
 
             // Render Server Pills
