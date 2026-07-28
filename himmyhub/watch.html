@@ -263,11 +263,11 @@
         const malId = document.getElementById('malId').value.trim();
         if (!malId) { log('Enter a MAL ID first', 'err'); return; }
 
-        log(`Querying MAL-Sync GitHub Backup for MAL ID ${malId}...`, 'info');
+        log(`Resolving MAL ID ${malId} via MAL-Sync...`, 'info');
 
         try {
-            const res = await fetch(`https://raw.githubusercontent.com/MALSync/MAL-Sync-Backup/master/data/myAnimeList/anime/${malId}.json`);
-            if (!res.ok) { log(`MAL-Sync Backup returned ${res.status}`, 'err'); return; }
+            const res = await fetch(`/api/malsync?malId=${malId}`);
+            if (!res.ok) { log(`MAL-Sync returned ${res.status}`, 'err'); return; }
 
             const data = await res.json();
             log(`Title: ${data.title || 'Unknown'}`, 'ok');
