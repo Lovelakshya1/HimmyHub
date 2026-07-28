@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Anikoto Stream Tester</title>
+    <title>Anikoto Stream Tester (AniKotoAPI Logic)</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap" rel="stylesheet" />
     <style>
         :root {
@@ -56,7 +56,6 @@
             width: 160px;
         }
         .field input:focus, .field select:focus { border-color: var(--accent); }
-        .field input::placeholder { color: rgba(255,255,255,0.2); }
 
         button {
             padding: 10px 20px;
@@ -79,7 +78,6 @@
             color: var(--text);
             border: 1px solid var(--border);
         }
-        .btn-secondary:hover { border-color: var(--accent); }
 
         .log-box {
             background: var(--card);
@@ -90,7 +88,7 @@
             font-size: 0.78rem;
             line-height: 1.7;
             color: var(--muted);
-            max-height: 160px;
+            max-height: 180px;
             overflow-y: auto;
             font-family: 'JetBrains Mono', monospace;
         }
@@ -106,7 +104,7 @@
         }
         .url-card {
             flex: 1;
-            min-width: 280px;
+            min-width: 260px;
             background: var(--card);
             border: 1px solid var(--border);
             border-radius: 14px;
@@ -170,35 +168,21 @@
             display: block;
             background: #000;
         }
-
-        .status-dot {
-            width: 8px; height: 8px;
-            border-radius: 50%;
-            display: inline-block;
-            margin-right: 4px;
-        }
-        .status-dot.pending { background: #fbbf24; }
-        .status-dot.active { background: #34d399; }
-        .status-dot.error { background: #f87171; }
     </style>
 </head>
 <body>
 
-<h1>🎬 Anikoto Stream Tester</h1>
-<p class="subtitle">Test s-2 and s-5 MegaPlay embed routes with correct referrer policy</p>
+<h1>🎬 Anikoto Stream Tester (AniKotoAPI Logic)</h1>
+<p class="subtitle">Resolves MAL ID via anikototv.to & AniKotoAPI watch-main data-id logic</p>
 
 <div class="controls">
     <div class="field">
         <label>MAL ID</label>
-        <input type="number" id="malId" placeholder="e.g. 5114" value="5114" />
-    </div>
-    <div class="field">
-        <label>Anikoto Anime ID</label>
-        <input type="number" id="animeId" placeholder="e.g. 69" />
+        <input type="number" id="malId" value="5114" placeholder="5114" />
     </div>
     <div class="field">
         <label>Episode</label>
-        <input type="number" id="epNum" placeholder="1" value="1" />
+        <input type="number" id="epNum" value="1" placeholder="1" />
     </div>
     <div class="field">
         <label>Language</label>
@@ -207,43 +191,37 @@
             <option value="dub">DUB</option>
         </select>
     </div>
-    <button class="btn-secondary" onclick="resolveFromMalSync()">🔍 Resolve via MAL-Sync</button>
-    <button class="btn-primary" onclick="loadPlayers()">▶ Load Players</button>
+    <button class="btn-primary" onclick="resolveAndLoad()">🚀 Resolve & Play All</button>
 </div>
 
-<div class="log-box" id="logBox">Ready. Enter a MAL ID and click "Resolve via MAL-Sync" or enter an Anikoto Anime ID directly.</div>
+<div class="log-box" id="logBox">Ready. Click "Resolve & Play All" to test s-2 and s-5 routes.</div>
 
 <div class="urls-row" id="urlsRow" style="display:none;">
     <div class="url-card">
-        <h3>📚 s-2 URL</h3>
-        <code id="s2Url">—</code>
-        <button class="btn-secondary" onclick="copyUrl('s2Url')" style="font-size:0.7rem;padding:5px 12px;">Copy</button>
-    </div>
-    <div class="url-card">
-        <h3>⚡ s-5 URL</h3>
-        <code id="s5Url">—</code>
-        <button class="btn-secondary" onclick="copyUrl('s5Url')" style="font-size:0.7rem;padding:5px 12px;">Copy</button>
-    </div>
-    <div class="url-card">
-        <h3>🎬 MAL Route (Default)</h3>
+        <h3>🎬 MegaPlay MAL (Default)</h3>
         <code id="malUrl">—</code>
-        <button class="btn-secondary" onclick="copyUrl('malUrl')" style="font-size:0.7rem;padding:5px 12px;">Copy</button>
+    </div>
+    <div class="url-card">
+        <h3>📚 s-2 Route</h3>
+        <code id="s2Url">—</code>
+    </div>
+    <div class="url-card">
+        <h3>⚡ s-5 Route</h3>
+        <code id="s5Url">—</code>
     </div>
 </div>
 
 <div class="players-row" id="playersRow" style="display:none;">
     <div class="player-box">
-        <div class="player-label">
-            <span class="status-dot pending" id="s2Dot"></span>
-            📚 s-2 Player <span class="pill">AniKoto</span>
-        </div>
+        <div class="player-label">🎬 MegaPlay MAL (Default) <span class="pill">MAL Route</span></div>
+        <iframe id="malFrame" referrerpolicy="origin" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
+    </div>
+    <div class="player-box">
+        <div class="player-label">📚 s-2 Route <span class="pill">AniKoto s-2</span></div>
         <iframe id="s2Frame" referrerpolicy="origin" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
     </div>
     <div class="player-box">
-        <div class="player-label">
-            <span class="status-dot pending" id="s5Dot"></span>
-            ⚡ s-5 Player <span class="pill">AniKoto</span>
-        </div>
+        <div class="player-label">⚡ s-5 Route <span class="pill">AniKoto s-5</span></div>
         <iframe id="s5Frame" referrerpolicy="origin" allow="autoplay; encrypted-media; fullscreen" allowfullscreen></iframe>
     </div>
 </div>
@@ -259,115 +237,44 @@
         logBox.scrollTop = logBox.scrollHeight;
     }
 
-    async function resolveFromMalSync() {
-        const malId = document.getElementById('malId').value.trim();
-        if (!malId) { log('Enter a MAL ID first', 'err'); return; }
-
-        log(`Resolving MAL ID ${malId} via MAL-Sync...`, 'info');
-
-        try {
-            const res = await fetch(`/api/malsync?malId=${malId}`);
-            if (!res.ok) { log(`MAL-Sync returned ${res.status}`, 'err'); return; }
-
-            const data = await res.json();
-            log(`Title: ${data.title || 'Unknown'}`, 'ok');
-
-            const sites = data.Sites || {};
-
-            // Check Anikoto
-            let slug = null;
-            if (sites.Anikoto) {
-                const key = Object.keys(sites.Anikoto)[0];
-                if (key) {
-                    const entry = sites.Anikoto[key];
-                    slug = entry.identifier || key;
-                    log(`Anikoto slug: ${slug}`, 'ok');
-                }
-            }
-
-            // Fallback to Zoro/HiAnime
-            if (!slug && sites.Zoro) {
-                const key = Object.keys(sites.Zoro)[0];
-                if (key) {
-                    const entry = sites.Zoro[key];
-                    const zoroId = entry.identifier || key;
-                    slug = zoroId.replace(/-\d+$/, '');
-                    log(`Zoro slug: ${zoroId} → stripped: ${slug}`, 'ok');
-                }
-            }
-
-            if (!slug) { log('No Anikoto or Zoro mapping found in MAL-Sync', 'err'); return; }
-
-            // Now fetch the watch page to get data-id
-            log(`Fetching watch page: anikoto.net/watch/${slug}`, 'info');
-            try {
-                const watchRes = await fetch(`https://anikoto.net/watch/${slug}`, {
-                    headers: { 'Referer': 'https://anikoto.net/' },
-                    referrerPolicy: 'origin'
-                });
-
-                if (watchRes.ok) {
-                    const html = await watchRes.text();
-                    const match = html.match(/id\s*=\s*"watch-main"[^>]*\bdata-id\s*=\s*"(\d+)"/);
-                    const match2 = html.match(/data-id\s*=\s*"(\d+)"[^>]*id\s*=\s*"watch-main"/);
-                    const match3 = html.match(/manga_id["\s:=]+(\d+)/);
-
-                    const animeId = match?.[1] || match2?.[1] || match3?.[1];
-                    if (animeId) {
-                        document.getElementById('animeId').value = animeId;
-                        log(`✅ Resolved Anikoto anime ID: ${animeId}`, 'ok');
-                    } else {
-                        log('Watch page loaded but data-id not found in HTML', 'err');
-                        log('You may need to enter the Anikoto anime ID manually', 'info');
-                    }
-                } else {
-                    log(`Watch page returned ${watchRes.status} (CORS/blocked) — enter anime ID manually`, 'err');
-                }
-            } catch (e) {
-                log(`Watch page fetch failed (CORS expected): ${e.message}`, 'err');
-                log('Enter the Anikoto anime ID manually from your browser DevTools', 'info');
-            }
-
-        } catch (e) {
-            log(`MAL-Sync error: ${e.message}`, 'err');
-        }
-    }
-
-    function loadPlayers() {
-        const animeId = document.getElementById('animeId').value.trim();
+    async function resolveAndLoad() {
         const malId = document.getElementById('malId').value.trim();
         const ep = document.getElementById('epNum').value.trim() || '1';
         const lang = document.getElementById('lang').value;
 
-        if (!animeId) {
-            log('Enter an Anikoto Anime ID first (resolve via MAL-Sync or enter manually)', 'err');
-            return;
+        if (!malId) { log('Enter a MAL ID', 'err'); return; }
+
+        log(`Resolving MAL ID ${malId} via /api/anikoto-resolve...`, 'info');
+
+        try {
+            const res = await fetch(`/api/anikoto-resolve?malId=${malId}&ep=${ep}&lang=${lang}`);
+            const data = await res.json();
+
+            if (!res.ok || !data.success) {
+                log(`Resolution error: ${data.error || 'Unknown error'}`, 'err');
+                return;
+            }
+
+            log(`Anime Title: ${data.title}`, 'ok');
+            log(`Anikoto Slug: ${data.slug}`, 'ok');
+            log(`Anikoto Anime ID (#watch-main data-id): ${data.animeId || 'NOT FOUND'}`, data.animeId ? 'ok' : 'err');
+
+            document.getElementById('malUrl').textContent = data.urls.mal;
+            document.getElementById('s2Url').textContent = data.urls.s2 || 'N/A (Missing animeId)';
+            document.getElementById('s5Url').textContent = data.urls.s5 || 'N/A (Missing animeId)';
+            document.getElementById('urlsRow').style.display = 'flex';
+
+            document.getElementById('malFrame').src = data.urls.mal;
+            if (data.urls.s2) document.getElementById('s2Frame').src = data.urls.s2;
+            if (data.urls.s5) document.getElementById('s5Frame').src = data.urls.s5;
+
+            document.getElementById('playersRow').style.display = 'flex';
+
+            log(`Loaded iframe streams with referrerPolicy="origin"`, 'ok');
+
+        } catch (e) {
+            log(`Error: ${e.message}`, 'err');
         }
-
-        const s2 = `https://megaplay.buzz/stream/s-2/${animeId}/${lang}?ep=${ep}`;
-        const s5 = `https://megaplay.buzz/stream/s-5/${animeId}/${lang}?ep=${ep}`;
-        const mal = malId ? `https://megaplay.buzz/stream/mal/${malId}/${ep}/${lang}` : '—';
-
-        document.getElementById('s2Url').textContent = s2;
-        document.getElementById('s5Url').textContent = s5;
-        document.getElementById('malUrl').textContent = mal;
-        document.getElementById('urlsRow').style.display = 'flex';
-
-        document.getElementById('s2Frame').src = s2;
-        document.getElementById('s5Frame').src = s5;
-        document.getElementById('playersRow').style.display = 'flex';
-
-        document.getElementById('s2Dot').className = 'status-dot active';
-        document.getElementById('s5Dot').className = 'status-dot active';
-
-        log(`Loaded s-2: ${s2}`, 'ok');
-        log(`Loaded s-5: ${s5}`, 'ok');
-        log(`referrerPolicy="origin" → referrer will be: ${window.location.origin}`, 'info');
-    }
-
-    function copyUrl(id) {
-        const text = document.getElementById(id).textContent;
-        navigator.clipboard.writeText(text).then(() => log('Copied to clipboard', 'ok'));
     }
 </script>
 
