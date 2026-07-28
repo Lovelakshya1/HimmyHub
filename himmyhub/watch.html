@@ -263,14 +263,14 @@
         const malId = document.getElementById('malId').value.trim();
         if (!malId) { log('Enter a MAL ID first', 'err'); return; }
 
-        log(`Querying MAL-Sync API for MAL ID ${malId}...`, 'info');
+        log(`Querying MAL-Sync GitHub Backup for MAL ID ${malId}...`, 'info');
 
         try {
-            const res = await fetch(`https://api.malsync.moe/mal/anime/${malId}`);
-            if (!res.ok) { log(`MAL-Sync returned ${res.status}`, 'err'); return; }
+            const res = await fetch(`https://raw.githubusercontent.com/MALSync/MAL-Sync-Backup/master/data/myAnimeList/anime/${malId}.json`);
+            if (!res.ok) { log(`MAL-Sync Backup returned ${res.status}`, 'err'); return; }
 
             const data = await res.json();
-            log(`Title: ${data.title}`, 'ok');
+            log(`Title: ${data.title || 'Unknown'}`, 'ok');
 
             const sites = data.Sites || {};
 
@@ -279,8 +279,9 @@
             if (sites.Anikoto) {
                 const key = Object.keys(sites.Anikoto)[0];
                 if (key) {
-                    slug = sites.Anikoto[key].identifier;
-                    log(`MAL-Sync Anikoto slug: ${slug}`, 'ok');
+                    const entry = sites.Anikoto[key];
+                    slug = entry.identifier || key;
+                    log(`Anikoto slug: ${slug}`, 'ok');
                 }
             }
 
@@ -288,9 +289,10 @@
             if (!slug && sites.Zoro) {
                 const key = Object.keys(sites.Zoro)[0];
                 if (key) {
-                    const zoroId = sites.Zoro[key].identifier;
+                    const entry = sites.Zoro[key];
+                    const zoroId = entry.identifier || key;
                     slug = zoroId.replace(/-\d+$/, '');
-                    log(`MAL-Sync Zoro slug: ${zoroId} → stripped: ${slug}`, 'ok');
+                    log(`Zoro slug: ${zoroId} → stripped: ${slug}`, 'ok');
                 }
             }
 
