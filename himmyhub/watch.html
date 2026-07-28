@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AniKoto Watch - ID Resolver</title>
+    <title>AniKoto Watch - ID Resolver (V2)</title>
     <style>
         * {
             margin: 0;
@@ -46,7 +46,6 @@
             font-style: italic;
         }
 
-        /* Input Section */
         .input-section {
             background: rgba(30, 20, 15, 0.8);
             border: 2px solid #b8860b;
@@ -61,6 +60,7 @@
             gap: 15px;
             margin-bottom: 20px;
             align-items: center;
+            flex-wrap: wrap;
         }
 
         label {
@@ -69,8 +69,7 @@
             min-width: 100px;
         }
 
-        input[type="number"] {
-            flex: 1;
+        input {
             padding: 12px 16px;
             background: rgba(10, 10, 10, 0.9);
             border: 2px solid #8b6914;
@@ -78,9 +77,11 @@
             color: #e8dcc8;
             font-size: 1em;
             transition: all 0.3s ease;
+            flex: 1;
+            min-width: 200px;
         }
 
-        input[type="number"]:focus {
+        input:focus {
             outline: none;
             border-color: #ffd700;
             box-shadow: 0 0 10px rgba(255, 215, 0, 0.2);
@@ -103,17 +104,12 @@
             box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3);
         }
 
-        button:active {
-            transform: translateY(0);
-        }
-
         button:disabled {
             opacity: 0.5;
             cursor: not-allowed;
             transform: none;
         }
 
-        /* Status Messages */
         .status {
             padding: 12px 16px;
             border-radius: 4px;
@@ -146,7 +142,7 @@
 
         .id-display {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
             gap: 15px;
             margin-top: 20px;
         }
@@ -168,12 +164,11 @@
 
         .id-card-value {
             color: #ffd700;
-            font-size: 1.8em;
+            font-size: 1.6em;
             font-weight: bold;
             font-family: 'Courier New', monospace;
         }
 
-        /* Players Section */
         .players-section {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
@@ -245,7 +240,7 @@
             padding: 10px 12px;
             border-radius: 4px;
             color: #e8dcc8;
-            font-size: 0.85em;
+            font-size: 0.75em;
             font-family: 'Courier New', monospace;
             word-break: break-all;
             overflow-x: auto;
@@ -272,36 +267,6 @@
             pointer-events: none;
         }
 
-        .error-box {
-            background: rgba(220, 20, 60, 0.15);
-            border: 2px solid #ff6b6b;
-            border-radius: 8px;
-            padding: 20px;
-            color: #ff6b6b;
-            margin-top: 20px;
-            display: none;
-        }
-
-        .error-box.show {
-            display: block;
-        }
-
-        .spinner {
-            display: inline-block;
-            width: 16px;
-            height: 16px;
-            border: 2px solid rgba(255, 215, 0, 0.3);
-            border-top-color: #ffd700;
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-            margin-right: 8px;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Responsive */
         @media (max-width: 768px) {
             h1 {
                 font-size: 1.8em;
@@ -329,36 +294,34 @@
     <div class="container">
         <header>
             <h1>🎬 AniKoto Watch</h1>
-            <p class="subtitle">MAL ID → AniKoto Internal ID Resolver</p>
+            <p class="subtitle">MAL ID / Title → AniKoto Internal ID Resolver (V2)</p>
         </header>
 
         <div class="input-section">
             <div class="input-group">
-                <label for="malId">MAL ID:</label>
+                <label for="malIdOrTitle">Search by:</label>
                 <input 
-                    type="number" 
-                    id="malId" 
-                    placeholder="e.g., 50265 (Chainsaw Man)"
-                    min="1"
+                    type="text" 
+                    id="malIdOrTitle" 
+                    placeholder="MAL ID (21) or Anime Title (Demon Slayer)"
                 >
-                <button id="resolveBtn" onclick="resolveMalId()">Resolve ID</button>
+                <button id="resolveBtn" onclick="resolve()">Search & Resolve</button>
             </div>
             <div class="status" id="status"></div>
             <div class="id-display" id="idDisplay"></div>
-            <div class="error-box" id="errorBox"></div>
         </div>
 
-        <div class="players-section" id="playersSection">
+        <div class="players-section" id="playersSection" style="display: none;">
             <!-- Players will be populated here -->
         </div>
     </div>
 
     <script>
-        // Kitsu API integration
         const KITSU_BASE = 'https://kitsu.app/api/edge';
         let resolvedIds = {
             mal: null,
             anikoto: null,
+            kitsu: null,
             title: null
         };
 
@@ -366,128 +329,203 @@
             const status = document.getElementById('status');
             status.textContent = message;
             status.className = `status show ${type}`;
-            if (type !== 'loading') {
-                setTimeout(() => status.classList.remove('show'), 5000);
-            }
         }
 
-        function showError(message) {
-            const errorBox = document.getElementById('errorBox');
-            errorBox.textContent = message;
-            errorBox.classList.add('show');
+        function hideStatus() {
+            document.getElementById('status').classList.remove('show');
         }
 
-        function clearError() {
-            document.getElementById('errorBox').classList.remove('show');
+        function isNumeric(str) {
+            return /^\d+$/.test(str);
         }
 
-        async function resolveMalId() {
-            const malIdInput = document.getElementById('malId').value;
+        async function resolve() {
+            const input = document.getElementById('malIdOrTitle').value.trim();
             
-            if (!malIdInput || malIdInput < 1) {
-                showError('Please enter a valid MAL ID');
+            if (!input) {
+                showStatus('❌ Please enter MAL ID or anime title', 'error');
                 return;
             }
 
-            clearError();
-            showStatus('🔍 Resolving MAL ID via Kitsu...', 'loading');
-            
             const btn = document.getElementById('resolveBtn');
             btn.disabled = true;
 
+            if (isNumeric(input)) {
+                await resolveByMalId(Number(input));
+            } else {
+                await resolveByTitle(input);
+            }
+
+            btn.disabled = false;
+        }
+
+        async function resolveByMalId(malId) {
+            showStatus('🔍 Looking up MAL ID ' + malId + ' via Kitsu...', 'loading');
+
             try {
-                // Query Kitsu mappings with MAL ID
                 const response = await fetch(
-                    `${KITSU_BASE}/mappings?filter[externalSite]=myanimelist/anime&filter[externalId]=${malIdInput}&include=item&fields[item]=id,slug,titles,canonicalTitle`,
-                    {
-                        headers: { 'Accept': 'application/vnd.api+json' }
-                    }
+                    `${KITSU_BASE}/mappings?filter[externalSite]=myanimelist/anime&filter[externalId]=${malId}&include=item`,
+                    { headers: { 'Accept': 'application/vnd.api+json' } }
                 );
 
-                if (!response.ok) throw new Error('Kitsu API error');
+                if (!response.ok) {
+                    throw new Error(`API returned ${response.status}`);
+                }
 
                 const data = await response.json();
 
                 if (!data.data || data.data.length === 0) {
-                    throw new Error(`No mapping found for MAL ID ${malIdInput}`);
+                    throw new Error('No mapping found. Try searching by title instead.');
                 }
 
-                // Extract anime item from included
+                let animeData;
+                
+                // Check if anime is in included
                 const animeItem = data.included?.find(i => i.type === 'anime');
-                if (!animeItem) throw new Error('No anime data found');
-
-                const title = animeItem.attributes.canonicalTitle;
-                const kitsuId = animeItem.id;
                 
-                // For AniKoto, we'll use the slug as internal ID
-                // or derive it from title if not available
-                let anikotoId = animeItem.attributes.slug || 
-                               title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+                if (animeItem) {
+                    animeData = animeItem;
+                } else {
+                    // Fetch anime separately using relationship ID
+                    const kitsuId = data.data[0].relationships?.item?.data?.id;
+                    if (!kitsuId) throw new Error('Could not extract Kitsu ID');
 
-                resolvedIds = {
-                    mal: Number(malIdInput),
-                    anikoto: anikotoId,
-                    kitsu: kitsuId,
-                    title: title
-                };
+                    showStatus('📡 Fetching anime details...', 'loading');
+                    
+                    const animeResponse = await fetch(
+                        `${KITSU_BASE}/anime/${kitsuId}`,
+                        { headers: { 'Accept': 'application/vnd.api+json' } }
+                    );
 
-                displayIds();
-                generatePlayers();
-                
-                showStatus(`✅ Resolved: "${title}"`, 'success');
+                    if (!animeResponse.ok) throw new Error('Failed to fetch anime');
+                    const animeDataResponse = await animeResponse.json();
+                    animeData = animeDataResponse.data;
+                }
+
+                populateIds(malId, animeData);
             } catch (error) {
-                console.error('Resolution error:', error);
-                showError(`Failed to resolve: ${error.message}`);
-            } finally {
-                btn.disabled = false;
+                showStatus(`❌ ${error.message}`, 'error');
             }
+        }
+
+        async function resolveByTitle(title) {
+            showStatus('🔍 Searching Kitsu for "' + title + '"...', 'loading');
+
+            try {
+                const response = await fetch(
+                    `${KITSU_BASE}/anime?filter[text]=${encodeURIComponent(title)}&page[limit]=1`,
+                    { headers: { 'Accept': 'application/vnd.api+json' } }
+                );
+
+                if (!response.ok) throw new Error(`API returned ${response.status}`);
+
+                const data = await response.json();
+
+                if (!data.data || data.data.length === 0) {
+                    throw new Error(`No anime found matching "${title}"`);
+                }
+
+                const animeItem = data.data[0];
+                const kitsuId = animeItem.id;
+
+                showStatus('📡 Fetching mappings...', 'loading');
+
+                // Now fetch mappings for this anime to find MAL ID
+                const mappingsResponse = await fetch(
+                    `${KITSU_BASE}/mappings?filter[item]=${kitsuId}&filter[externalSite]=myanimelist/anime`,
+                    { headers: { 'Accept': 'application/vnd.api+json' } }
+                );
+
+                let malId = null;
+
+                if (mappingsResponse.ok) {
+                    const mappingsData = await mappingsResponse.json();
+                    if (mappingsData.data && mappingsData.data.length > 0) {
+                        malId = Number(mappingsData.data[0].attributes.externalId);
+                    }
+                }
+
+                populateIds(malId, animeItem);
+            } catch (error) {
+                showStatus(`❌ ${error.message}`, 'error');
+            }
+        }
+
+        function populateIds(malId, animeItem) {
+            const title = animeItem.attributes.canonicalTitle || 'Unknown';
+            const slug = animeItem.attributes.slug || title.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+            const kitsuId = animeItem.id;
+
+            resolvedIds = {
+                mal: malId,
+                anikoto: slug,
+                kitsu: kitsuId,
+                title: title
+            };
+
+            displayIds();
+            generatePlayers();
+
+            showStatus(`✅ Found: "${title}"`, 'success');
+            setTimeout(() => hideStatus(), 3000);
         }
 
         function displayIds() {
             const display = document.getElementById('idDisplay');
-            display.innerHTML = `
+            
+            const cards = [
+                { label: 'Anime Title', value: resolvedIds.title },
+                { label: 'Kitsu ID', value: resolvedIds.kitsu },
+                { label: 'AniKoto ID', value: resolvedIds.anikoto }
+            ];
+
+            if (resolvedIds.mal) {
+                cards.push({ label: 'MAL ID', value: resolvedIds.mal });
+            }
+
+            display.innerHTML = cards.map(card => `
                 <div class="id-card">
-                    <div class="id-card-label">MAL ID</div>
-                    <div class="id-card-value">${resolvedIds.mal}</div>
+                    <div class="id-card-label">${card.label}</div>
+                    <div class="id-card-value">${card.value}</div>
                 </div>
-                <div class="id-card">
-                    <div class="id-card-label">AniKoto ID</div>
-                    <div class="id-card-value">${resolvedIds.anikoto}</div>
-                </div>
-                <div class="id-card">
-                    <div class="id-card-label">Kitsu ID</div>
-                    <div class="id-card-value">${resolvedIds.kitsu}</div>
-                </div>
-                <div class="id-card">
-                    <div class="id-card-label">Title</div>
-                    <div class="id-card-value" style="font-size: 1.2em;">${resolvedIds.title}</div>
-                </div>
-            `;
+            `).join('');
         }
 
         function generatePlayers() {
             const section = document.getElementById('playersSection');
-            
-            // Player configurations
-            const players = [
-                {
+
+            const players = [];
+
+            // Only add S-2 and S-5 if we have anikoto ID
+            if (resolvedIds.anikoto) {
+                players.push({
                     name: 'MegaPlay S-2',
                     url: `https://megaplay.buzz/stream/s-2/${resolvedIds.anikoto}/sub?ep=1`,
                     badge: 'Server 2'
-                },
-                {
+                });
+
+                players.push({
                     name: 'MegaPlay S-5',
                     url: `https://megaplay.buzz/stream/s-5/${resolvedIds.anikoto}/sub?ep=1`,
                     badge: 'Server 5'
-                },
-                {
-                    name: 'MegaPlay Default',
+                });
+            }
+
+            // Add MAL direct player if we have MAL ID
+            if (resolvedIds.mal) {
+                players.push({
+                    name: 'MegaPlay Direct',
                     url: `https://megaplay.buzz/stream/mal/${resolvedIds.mal}/1/sub`,
                     badge: 'MAL Direct'
-                }
-            ];
+                });
+            }
 
-            section.innerHTML = players.map((player, idx) => `
+            if (players.length === 0) {
+                section.style.display = 'none';
+                return;
+            }
+
+            section.innerHTML = players.map(player => `
                 <div class="player-container">
                     <div class="player-header">
                         <span class="player-name">${player.name}</span>
@@ -503,27 +541,27 @@
                     <div class="player-url">
                         <div class="url-label">Player URL</div>
                         <div class="url-text">${player.url}</div>
-                        <button class="copy-btn" onclick="copyToClipboard('${player.url}')">📋 Copy URL</button>
+                        <button class="copy-btn" onclick="copyToClipboard('${player.url.replace(/'/g, "\\'")}')">📋 Copy</button>
                     </div>
                 </div>
             `).join('');
+
+            section.style.display = 'grid';
         }
 
         function copyToClipboard(text) {
             navigator.clipboard.writeText(text).then(() => {
-                showStatus('✅ URL copied to clipboard!', 'success');
-            }).catch(err => {
-                showError('Failed to copy URL');
+                showStatus('✅ Copied to clipboard!', 'success');
+                setTimeout(() => hideStatus(), 2000);
+            }).catch(() => {
+                showStatus('❌ Failed to copy', 'error');
             });
         }
 
-        // Allow Enter key to resolve
-        document.getElementById('malId').addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') resolveMalId();
+        // Allow Enter key
+        document.getElementById('malIdOrTitle').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') resolve();
         });
-
-        // Disable players section initially
-        document.getElementById('playersSection').classList.add('disabled-state');
     </script>
 </body>
 </html>
