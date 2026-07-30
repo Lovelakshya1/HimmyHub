@@ -251,12 +251,18 @@
                 </div>
             </div>
             <button class="btn btn-primary" id="fetch-btn" onclick="fetchServers()">
-                &#9654; Fetch Servers
+                &#9654; Fetch Servers (auto proxy)
             </button>
-            <div class="cors-note">
-                &#9888;&#65039; If you see a CORS error, the API blocks browser requests directly.
-                Deploy this page to a web host, or run a local server (<code>npx serve .</code>).
-                The iframe embed itself uses <code>referrerpolicy="origin"</code> to send the correct Referer.
+            <button class="btn btn-secondary" id="open-api-btn" style="display:none; margin-top:8px;">
+                &#127758; Open API URL in new tab (copy dataLinks manually)
+            </button>
+            <div class="cors-note" style="margin-top:10px;">
+                <strong>Why does fetch fail but iframe works?</strong><br/>
+                Browser <code>fetch()</code> enforces CORS &mdash; the server must send
+                <code>Access-Control-Allow-Origin</code>. reanime.to doesn&apos;t, so the browser blocks it.<br/><br/>
+                <code>&lt;iframe src&gt;</code> is a navigation request, not XHR &mdash; CORS does NOT apply to it.<br/><br/>
+                <strong>Android OkHttp is also CORS-free</strong> (native HTTP client, no browser sandbox).
+                App integration will work perfectly. Proxies below are for browser testing only.
             </div>
         </div>
 
@@ -343,6 +349,29 @@
         document.getElementById('log').innerHTML = '';
     }
 
+    const CORS_PROXIES = [
+        {
+            name: 'direct',
+            wrap: function(u) { return u; },
+            parse: function(r) { return r.json(); }
+        },
+        {
+            name: 'corsproxy.io',
+            wrap: function(u) { return 'https://corsproxy.io/?' + encodeURIComponent(u); },
+            parse: function(r) { return r.json(); }
+        },
+        {
+            name: 'allorigins.win',
+            wrap: function(u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
+            parse: function(r) { return r.json(); }
+        },
+        {
+            name: 'cors.sh',
+            wrap: function(u) { return 'https://cors.sh/' + u; },
+            parse: function(r) { return r.json(); }
+        }
+    ];
+
     async function fetchServers() {
         const anilistId = document.getElementById('anilist-id').value.trim();
         const episode   = document.getElementById('episode-num').value.trim();
@@ -356,54 +385,62 @@
         document.getElementById('servers-section').style.display = 'none';
         document.getElementById('raw-section').style.display = 'none';
         document.getElementById('server-list').innerHTML = '';
+        document.getElementById('open-api-btn').style.display = 'none';
 
-        const url = API_BASE + '/' + anilistId + '/' + episode;
-        log('Fetching: ' + url, 'info');
-        log('Note: browser fetch cannot manually set Referer/User-Agent headers.', 'warn');
+        const targetUrl = API_BASE + '/' + anilistId + '/' + episode;
+        log('Target: ' + targetUrl, 'info');
+        log('iframes & Android OkHttp are CORS-free. Proxy is only needed for browser fetch.', 'ok');
 
         const btn = document.getElementById('fetch-btn');
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Fetching...';
+        btn.innerHTML = '<span class="spinner"></span> Trying proxies...';
 
-        try {
-            const res = await fetch(url, {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' },
-                mode: 'cors'
-            });
+        let succeeded = false;
 
-            if (!res.ok) throw new Error('HTTP ' + res.status + ' ' + res.statusText);
+        for (var i = 0; i < CORS_PROXIES.length; i++) {
+            var proxy = CORS_PROXIES[i];
+            var proxyUrl = proxy.wrap(targetUrl);
+            var label = proxy.name === 'direct' ? 'direct' : 'via ' + proxy.name;
+            log('[' + (i+1) + '/' + CORS_PROXIES.length + '] Trying ' + label + '...', 'info');
 
-            const data = await res.json();
-            log('Response OK. success=' + data.success + ' servers=' + (data.servers ? data.servers.length : 0), 'ok');
-            renderServers(data);
-            renderRaw(data);
-
-        } catch (err) {
-            log('Fetch failed: ' + err.message, 'error');
-
-            if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError') || err.message.includes('CORS')) {
-                log('Likely a CORS block. Trying no-cors probe...', 'warn');
-                try {
-                    await fetch(url, { mode: 'no-cors' });
-                    log('no-cors probe sent (response opaque). API exists but blocks browser CORS.', 'warn');
-                    log('OPTIONS: 1) Deploy page on reanime.to subdomain. 2) Add a proxy endpoint.', 'warn');
-                    showManualInstructions(anilistId, episode);
-                } catch (e2) {
-                    log('no-cors probe also failed: ' + e2.message, 'error');
-                }
+            try {
+                var res = await fetch(proxyUrl, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    signal: AbortSignal.timeout(7000)
+                });
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                var data = await proxy.parse(res);
+                if (!data || !data.servers) throw new Error('Unexpected response shape');
+                log('[' + label + '] SUCCESS — servers=' + data.servers.length, 'ok');
+                renderServers(data);
+                renderRaw(data);
+                succeeded = true;
+                break;
+            } catch (err) {
+                log('[' + label + '] failed: ' + err.message, 'error');
             }
-        } finally {
-            btn.disabled = false;
-            btn.textContent = '\u25B6 Fetch Servers';
         }
+
+        if (!succeeded) {
+            log('All proxies failed. Android OkHttp in the app will still work perfectly.', 'warn');
+            log('For manual test: open the API URL in a new tab, copy a dataLink, paste it in the section below.', 'info');
+            var openBtn = document.getElementById('open-api-btn');
+            openBtn.style.display = 'flex';
+            openBtn.onclick = function() { window.open(targetUrl, '_blank'); };
+        }
+
+        btn.disabled = false;
+        btn.textContent = '\u25B6 Fetch Servers (auto proxy)';
     }
 
     function showManualInstructions(id, ep) {
-        const apiUrl = API_BASE + '/' + id + '/' + ep;
-        log('MANUAL TEST: Open this URL in a new tab to see raw JSON: ' + apiUrl, 'info');
-        log('Then paste a dataLink from the response into the "Manual Embed URL Test" panel below.', 'info');
+        var apiUrl = API_BASE + '/' + id + '/' + ep;
+        log('MANUAL TEST: Open this URL in a new tab: ' + apiUrl, 'info');
+        log('Then paste a dataLink into the Manual Embed URL Test section below.', 'info');
     }
+
+
 
     function renderServers(data) {
         if (!data.success || !data.servers || data.servers.length === 0) {
