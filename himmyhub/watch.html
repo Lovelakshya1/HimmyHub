@@ -319,12 +319,16 @@
         <div class="card">
             <h3>Image Referrer Policy</h3>
             <select id="ref-policy" onchange="updateReferrerPolicy()">
-                <option value="no-referrer">no-referrer (Bypasses most Cloudflare referer blocks)</option>
+                <option value="no-referrer">no-referrer (Sends no referer header)</option>
                 <option value="origin">origin (Sends https://domain.com)</option>
-                <option value="unsafe-url">unsafe-url (Sends full URL as referer)</option>
+                <option value="unsafe-url">unsafe-url (Sends full page URL)</option>
             </select>
-            <div class="note-box">
-                💡 <strong>Cloudflare Hotlink Note:</strong> MangaPill image CDNs (e.g. <code>cdn.readdetectiveconan.com</code>) check the <code>Referer</code> header. Setting <code>referrerpolicy="no-referrer"</code> or loading via native Android OkHttp/Coil bypasses Cloudflare image hotlink restrictions completely!
+            <div class="note-box" style="color: #86efac; background: rgba(34,197,94,0.08); border-color: rgba(34,197,94,0.2);">
+                ✅ <strong>Android Native Setup (OkHttp + Coil):</strong><br/>
+                In our Android app, every Coil image request sends:<br/>
+                <code>Referer: https://mangapill.com/</code><br/>
+                <code>User-Agent: Mozilla/5.0 ...</code><br/>
+                This completely satisfies MangaPill & Cloudflare hotlink verification!
             </div>
         </div>
 
