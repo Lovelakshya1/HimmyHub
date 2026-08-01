@@ -272,7 +272,7 @@
             <span class="brand-badge">Direct Reader Test</span>
         </div>
         <div style="font-size: 12px; color: var(--text-dim);">
-            Referrer-Policy: <strong>no-referrer</strong> (Cloudflare hotlink proof)
+            Referer: <strong>https://mangapill.com/</strong> (Native OkHttp Header)
         </div>
     </header>
 
@@ -417,7 +417,7 @@
         // ── MangaPill Scraper ─────────────────────────────────────
         async function searchMangaPill(query) {
             log(`MangaPill Direct Search for "${query}"...`, 'info');
-            log('Note: MangaPill scraper extracts pages using referrer policy "no-referrer" to prevent Cloudflare image blocks.', 'ok');
+            log('In Android Kotlin app, Coil is configured with an OkHttp interceptor sending Referer: https://mangapill.com/', 'ok');
             
             // Preset Chainsaw Man chapter for direct test if query is chainsaw man
             if (query.toLowerCase().includes('chainsaw')) {
