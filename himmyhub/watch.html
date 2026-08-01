@@ -3,21 +3,20 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <!-- Force reanime.to as the referrer for all outgoing requests from this page -->
-    <meta name="referrer" content="origin" />
-    <title>ReAnime Provider Test · Himmy</title>
+    <title>Himmy Manga Provider & Reader Test Sandbox</title>
     <style>
         :root {
-            --bg: #08070c;
-            --surface: #110f1a;
-            --border: rgba(255,255,255,0.07);
-            --accent: #7c3aed;
-            --accent-dim: rgba(124,58,237,0.18);
-            --text: #f0eeff;
-            --text-dim: rgba(240,238,255,0.45);
+            --bg: #07060a;
+            --surface: #110f18;
+            --surface-card: #181524;
+            --border: rgba(255,255,255,0.08);
+            --accent: #a78bfa;
+            --accent-glow: rgba(167,139,250,0.2);
+            --text: #f3f0ff;
+            --text-muted: rgba(243,240,255,0.5);
             --success: #22c55e;
-            --error: #ef4444;
             --warn: #f59e0b;
+            --error: #ef4444;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -25,528 +24,548 @@
         body {
             background: var(--bg);
             color: var(--text);
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
 
+        /* Top Bar */
         .topbar {
             display: flex;
             align-items: center;
-            gap: 12px;
-            padding: 16px 24px;
-            border-bottom: 1px solid var(--border);
+            justify-content: space-between;
+            padding: 14px 24px;
             background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
         }
-        .topbar .logo {
+
+        .logo {
+            font-weight: 900;
             font-size: 16px;
-            font-weight: 800;
-            letter-spacing: -0.4px;
-            background: linear-gradient(135deg, #a78bfa, #7c3aed);
+            letter-spacing: -0.5px;
+            background: linear-gradient(135deg, #c4b5fd, #7c3aed);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-        }
-        .topbar .badge {
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            color: var(--warn);
-            background: rgba(245,158,11,0.12);
-            border: 1px solid rgba(245,158,11,0.25);
-            border-radius: 4px;
-            padding: 2px 7px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
 
+        .badge {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 0.8px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            background: var(--accent-glow);
+            color: var(--accent);
+            border: 1px solid rgba(167,139,250,0.3);
+        }
+
+        /* Layout */
         .layout {
             display: grid;
-            grid-template-columns: 360px 1fr;
-            height: calc(100vh - 57px);
+            grid-template-columns: 380px 1fr;
+            flex: 1;
+            height: calc(100vh - 58px);
         }
 
+        /* Sidebar Controls */
         .sidebar {
-            border-right: 1px solid var(--border);
             background: var(--surface);
+            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             overflow-y: auto;
+            padding: 18px;
+            gap: 20px;
         }
 
-        .sidebar-section {
-            padding: 20px;
-            border-bottom: 1px solid var(--border);
+        .card {
+            background: var(--surface-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
         }
 
-        .sidebar-section h3 {
-            font-size: 11px;
-            font-weight: 700;
-            letter-spacing: 1.2px;
-            color: var(--text-dim);
+        .card h3 {
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            color: var(--text-muted);
             text-transform: uppercase;
-            margin-bottom: 14px;
         }
 
-        .input-group { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
-        .input-row { display: flex; flex-direction: column; gap: 4px; }
-        .input-row label { font-size: 11px; font-weight: 600; color: var(--text-dim); }
+        .input-group {
+            display: flex;
+            gap: 8px;
+        }
 
-        input[type="text"], input[type="number"] {
+        input, select {
             background: rgba(255,255,255,0.04);
             border: 1px solid var(--border);
             border-radius: 8px;
-            color: var(--text);
-            font-size: 14px;
             padding: 9px 12px;
+            color: var(--text);
+            font-size: 13px;
             outline: none;
             width: 100%;
             transition: border-color 0.2s;
         }
-        input:focus { border-color: var(--accent); }
+
+        input:focus, select:focus {
+            border-color: var(--accent);
+        }
 
         .btn {
+            background: var(--accent);
+            color: #000;
+            font-weight: 800;
+            font-size: 12px;
+            padding: 9px 14px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: opacity 0.15s, transform 0.1s;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            padding: 10px 16px;
-            border: none;
-            border-radius: 9px;
-            font-size: 13px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: opacity 0.15s, transform 0.1s;
-            width: 100%;
+            gap: 6px;
         }
+
         .btn:active { transform: scale(0.97); }
-        .btn-primary { background: var(--accent); color: #fff; }
-        .btn-secondary { background: rgba(255,255,255,0.06); color: var(--text); border: 1px solid var(--border); }
+        .btn-secondary {
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
         .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 
-        .log { display: flex; flex-direction: column; gap: 6px; }
-        .log-item {
-            font-size: 11.5px;
-            border-radius: 6px;
-            padding: 8px 10px;
-            line-height: 1.5;
-            font-family: 'Menlo', 'Courier New', monospace;
-        }
-        .log-item.info  { background: rgba(124,58,237,0.1);  color: #c4b5fd; border-left: 2px solid var(--accent); }
-        .log-item.ok    { background: rgba(34,197,94,0.08);  color: #86efac; border-left: 2px solid var(--success); }
-        .log-item.error { background: rgba(239,68,68,0.08);  color: #fca5a5; border-left: 2px solid var(--error); }
-        .log-item.warn  { background: rgba(245,158,11,0.08); color: #fcd34d; border-left: 2px solid var(--warn); }
-
-        .server-list { display: flex; flex-direction: column; gap: 8px; }
-
-        .server-card {
+        /* Provider Select Pill Bar */
+        .provider-bar {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 11px 13px;
-            border: 1px solid var(--border);
-            border-radius: 10px;
+            background: rgba(255,255,255,0.04);
+            border-radius: 8px;
+            padding: 3px;
+            gap: 3px;
+        }
+
+        .provider-tab {
+            flex: 1;
+            text-align: center;
+            padding: 7px;
+            font-size: 11px;
+            font-weight: 800;
+            border-radius: 6px;
             cursor: pointer;
-            transition: border-color 0.15s, background 0.15s;
-            background: rgba(255,255,255,0.02);
+            color: var(--text-muted);
+            transition: all 0.2s;
         }
-        .server-card:hover { border-color: var(--accent); background: var(--accent-dim); }
-        .server-card.active { border-color: var(--accent); background: var(--accent-dim); }
-        .server-card .sc-name { font-size: 13px; font-weight: 700; }
-        .server-card .sc-meta { display: flex; align-items: center; gap: 6px; }
 
-        .tag {
-            font-size: 10px; font-weight: 700; letter-spacing: 0.8px;
-            border-radius: 4px; padding: 2px 6px; text-transform: uppercase;
+        .provider-tab.active {
+            background: var(--accent);
+            color: #000;
         }
-        .tag-sub { background: rgba(56,189,248,0.15); color: #7dd3fc; border: 1px solid rgba(56,189,248,0.3); }
-        .tag-dub { background: rgba(251,146,60,0.15); color: #fdba74; border: 1px solid rgba(251,146,60,0.3); }
 
-        .json-box {
-            background: rgba(0,0,0,0.3);
+        /* Log Panel */
+        .log-box {
+            background: rgba(0,0,0,0.4);
             border: 1px solid var(--border);
             border-radius: 8px;
-            padding: 12px;
-            font-family: 'Menlo', 'Courier New', monospace;
+            padding: 10px;
+            font-family: monospace;
             font-size: 11px;
-            color: #a5b4fc;
-            overflow-x: auto;
-            white-space: pre;
-            max-height: 220px;
+            max-height: 160px;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
         }
 
-        .player-area { display: flex; flex-direction: column; background: #000; }
+        .log-line { line-height: 1.4; }
+        .log-info { color: #a78bfa; }
+        .log-ok { color: #86efac; }
+        .log-error { color: #fca5a5; }
+        .log-warn { color: #fde047; }
 
-        .player-toolbar {
+        /* Reader Area */
+        .reader-area {
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .reader-header {
+            background: rgba(17,15,24,0.9);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 10px 18px;
-            background: var(--surface);
-            border-bottom: 1px solid var(--border);
-            flex-shrink: 0;
+            z-index: 10;
+        }
+
+        .reader-title {
+            font-size: 14px;
+            font-weight: 700;
+        }
+
+        .reader-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .page-scroll-view {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
             gap: 12px;
         }
-        .player-toolbar .pt-info { font-size: 12px; color: var(--text-dim); flex-shrink: 0; }
-        .player-toolbar .pt-info strong { color: var(--text); }
-        .player-toolbar .pt-url {
-            font-size: 11px; font-family: monospace;
-            color: #7c3aed; background: var(--accent-dim);
-            padding: 4px 9px; border-radius: 5px;
-            border: 1px solid rgba(124,58,237,0.3);
-            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-            cursor: pointer; flex: 1; min-width: 0;
+
+        .manga-page-img {
+            max-width: 720px;
+            width: 95%;
+            height: auto;
+            border-radius: 4px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.6);
+            background: #111;
+            min-height: 400px;
+            transition: opacity 0.3s;
         }
-        .player-toolbar .pt-url:hover { color: #a78bfa; }
 
-        .player-wrapper { flex: 1; position: relative; display: flex; align-items: center; justify-content: center; }
-        #player-iframe { width: 100%; height: 100%; border: none; position: absolute; inset: 0; }
+        .page-number-tag {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-family: monospace;
+        }
 
-        .player-placeholder { display: flex; flex-direction: column; align-items: center; gap: 12px; color: var(--text-dim); font-size: 14px; }
-        .player-placeholder .icon { font-size: 40px; }
-
-        .referrer-test-row { display: flex; gap: 8px; }
-
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 99px; }
+        .placeholder-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            color: var(--text-muted);
+            gap: 12px;
+            font-size: 14px;
+        }
 
         .spinner {
-            display: inline-block; width: 14px; height: 14px;
-            border: 2px solid rgba(255,255,255,0.15);
-            border-top-color: #a78bfa; border-radius: 50%;
-            animation: spin 0.7s linear infinite; vertical-align: middle;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(0,0,0,0.2);
+            border-top-color: #000;
+            border-radius: 50%;
+            animation: spin 0.6s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        .cors-note {
-            font-size: 11px; color: var(--warn);
-            background: rgba(245,158,11,0.06);
-            border: 1px solid rgba(245,158,11,0.15);
-            border-radius: 7px; padding: 8px 10px; line-height: 1.5; margin-top: 8px;
+        .note-box {
+            font-size: 11px;
+            line-height: 1.5;
+            color: var(--warn);
+            background: rgba(245,158,11,0.08);
+            border: 1px solid rgba(245,158,11,0.2);
+            border-radius: 8px;
+            padding: 10px;
         }
     </style>
 </head>
 <body>
 
 <div class="topbar">
-    <span class="logo">Himmy Dev</span>
-    <span class="badge">PROVIDER TEST</span>
-    <span style="margin-left:auto; font-size:12px; color:var(--text-dim);">reanime.to provider &middot; pre-integration sandbox</span>
+    <div class="logo">
+        📖 Himmy Manga Test Sandbox
+        <span class="badge">PROTOTYPE</span>
+    </div>
+    <div style="font-size: 12px; color: var(--text-muted);">
+        Deploy & Test MangaDex API & MangaPill Image Referrer Handling
+    </div>
 </div>
 
 <div class="layout">
-
-    <!-- ── Sidebar ── -->
+    <!-- Sidebar Controls -->
     <div class="sidebar">
+        <!-- Provider Selection -->
+        <div class="card">
+            <h3>Select Provider</h3>
+            <div class="provider-bar">
+                <div class="provider-tab active" id="tab-mangadex" onclick="selectProvider('mangadex')">
+                    MangaDex (API)
+                </div>
+                <div class="provider-tab" id="tab-mangapill" onclick="selectProvider('mangapill')">
+                    MangaPill (Scraper)
+                </div>
+            </div>
+        </div>
 
-        <!-- Query inputs -->
-        <div class="sidebar-section">
-            <h3>Query Parameters</h3>
+        <!-- Referrer Policy Configuration -->
+        <div class="card">
+            <h3>Image Referrer Policy</h3>
+            <select id="ref-policy" onchange="updateReferrerPolicy()">
+                <option value="no-referrer">no-referrer (Bypasses most Cloudflare referer blocks)</option>
+                <option value="origin">origin (Sends https://domain.com)</option>
+                <option value="unsafe-url">unsafe-url (Sends full URL as referer)</option>
+            </select>
+            <div class="note-box">
+                💡 <strong>Cloudflare Hotlink Note:</strong> MangaPill image CDNs (e.g. <code>cdn.readdetectiveconan.com</code>) check the <code>Referer</code> header. Setting <code>referrerpolicy="no-referrer"</code> or loading via native Android OkHttp/Coil bypasses Cloudflare image hotlink restrictions completely!
+            </div>
+        </div>
+
+        <!-- Search & Fetch -->
+        <div class="card">
+            <h3 id="search-title">Search MangaDex</h3>
             <div class="input-group">
-                <div class="input-row">
-                    <label>AniList ID</label>
-                    <input type="number" id="anilist-id" value="21" placeholder="e.g. 21 = One Piece" />
-                </div>
-                <div class="input-row">
-                    <label>Episode Number</label>
-                    <input type="number" id="episode-num" value="1000" min="1" placeholder="e.g. 1000" />
-                </div>
-            </div>
-            <button class="btn btn-primary" id="fetch-btn" onclick="fetchServers()">
-                &#9654; Fetch Servers (auto proxy)
-            </button>
-            <button class="btn btn-secondary" id="open-api-btn" style="display:none; margin-top:8px;">
-                &#127758; Open API URL in new tab (copy dataLinks manually)
-            </button>
-            <div class="cors-note" style="margin-top:10px;">
-                <strong>Why does fetch fail but iframe works?</strong><br/>
-                Browser <code>fetch()</code> enforces CORS &mdash; the server must send
-                <code>Access-Control-Allow-Origin</code>. reanime.to doesn&apos;t, so the browser blocks it.<br/><br/>
-                <code>&lt;iframe src&gt;</code> is a navigation request, not XHR &mdash; CORS does NOT apply to it.<br/><br/>
-                <strong>Android OkHttp is also CORS-free</strong> (native HTTP client, no browser sandbox).
-                App integration will work perfectly. Proxies below are for browser testing only.
-            </div>
-        </div>
-
-        <!-- Log -->
-        <div class="sidebar-section">
-            <h3>Request Log</h3>
-            <div class="log" id="log">
-                <div class="log-item info">Ready. Enter AniList ID + episode and click Fetch.</div>
-            </div>
-        </div>
-
-        <!-- Server list -->
-        <div class="sidebar-section" id="servers-section" style="display:none;">
-            <h3>Available Servers</h3>
-            <div class="server-list" id="server-list"></div>
-        </div>
-
-        <!-- Raw JSON -->
-        <div class="sidebar-section" id="raw-section" style="display:none;">
-            <h3>Raw API Response</h3>
-            <div class="json-box" id="raw-json"></div>
-        </div>
-
-        <!-- Manual embed test -->
-        <div class="sidebar-section">
-            <h3>Manual Embed URL Test</h3>
-            <div class="input-row" style="margin-bottom:10px;">
-                <label>Paste a dataLink directly</label>
-                <input type="text" id="manual-url" placeholder="https://flixcloud.cc/e/..." />
-            </div>
-            <div class="referrer-test-row">
-                <button class="btn btn-secondary" style="flex:1" onclick="playManual('origin')">
-                    origin ref
-                </button>
-                <button class="btn btn-secondary" style="flex:1" onclick="playManual('no-referrer')">
-                    no-referrer
-                </button>
-                <button class="btn btn-secondary" style="flex:1" onclick="playManual('unsafe-url')">
-                    unsafe-url
+                <input type="text" id="query-input" value="Chainsaw Man" placeholder="Search title e.g. Chainsaw Man" />
+                <button class="btn" id="search-btn" onclick="executeSearch()">
+                    Search
                 </button>
             </div>
-            <div class="cors-note">
-                Test all 3 referrer modes. <strong>origin</strong> sends your page domain as Referer.
-                <strong>unsafe-url</strong> sends the full URL. <strong>no-referrer</strong> sends nothing.
-                flixcloud.cc may whitelist reanime.to — so hosting this page there matters.
+            <div id="chapter-select-container" style="display:none; flex-direction:column; gap:8px;">
+                <label style="font-size:11px; color:var(--text-muted);">Select Chapter</label>
+                <select id="chapter-dropdown" onchange="loadSelectedChapter()"></select>
             </div>
         </div>
 
-    </div>
-
-    <!-- ── Player ── -->
-    <div class="player-area">
-        <div class="player-toolbar">
-            <span class="pt-info" id="player-info">No server selected</span>
-            <span class="pt-url" id="player-url-display" title="Click to copy" onclick="copyUrl()">&mdash;</span>
-        </div>
-        <div class="player-wrapper">
-            <div class="player-placeholder" id="player-placeholder">
-                <div class="icon">&#127909;</div>
-                <div>Select a server to load the embed player</div>
-                <div style="font-size:12px; margin-top:4px; color:var(--text-dim);">
-                    iframe will use <code>referrerpolicy="origin"</code> by default
-                </div>
+        <!-- Request Log -->
+        <div class="card">
+            <h3>Console Log</h3>
+            <div class="log-box" id="log-box">
+                <div class="log-line log-info">[System] Test Sandbox Ready.</div>
+                <div class="log-line log-info">[MangaDex] Direct REST API (api.mangadex.org) is CORS-enabled.</div>
             </div>
         </div>
     </div>
 
+    <!-- Reader Viewport -->
+    <div class="reader-area">
+        <div class="reader-header" id="reader-header" style="display:none;">
+            <div class="reader-title" id="reader-title">No Chapter Loaded</div>
+            <div class="reader-controls">
+                <span style="font-size:12px; color:var(--text-muted);" id="page-count-badge">0 Pages</span>
+                <button class="btn btn-secondary" onclick="scrollToTop()">↑ Top</button>
+            </div>
+        </div>
+
+        <div class="page-scroll-view" id="page-container">
+            <div class="placeholder-box" id="placeholder">
+                <div style="font-size:40px;">📚</div>
+                <div>Search a Manga and select a chapter to load pages</div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
-    const API_BASE = 'https://reanime.to/api/flix';
-    let activeRefPolicy = 'origin';
+    let activeProvider = 'mangadex';
+    let currentChapters = [];
 
     function log(msg, type = 'info') {
-        const container = document.getElementById('log');
-        const item = document.createElement('div');
-        item.className = 'log-item ' + type;
-        item.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
-        container.appendChild(item);
-        container.scrollTop = container.scrollHeight;
+        const box = document.getElementById('log-box');
+        const line = document.createElement('div');
+        line.className = `log-line log-${type}`;
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        box.appendChild(line);
+        box.scrollTop = box.scrollHeight;
     }
 
-    function clearLog() {
-        document.getElementById('log').innerHTML = '';
+    function selectProvider(provider) {
+        activeProvider = provider;
+        document.getElementById('tab-mangadex').className = `provider-tab ${provider === 'mangadex' ? 'active' : ''}`;
+        document.getElementById('tab-mangapill').className = `provider-tab ${provider === 'mangapill' ? 'active' : ''}`;
+        document.getElementById('search-title').textContent = provider === 'mangadex' ? 'Search MangaDex' : 'Fetch MangaPill Direct';
+        log(`Switched provider to: ${provider.toUpperCase()}`, 'info');
     }
 
-    const CORS_PROXIES = [
-        {
-            name: 'direct',
-            wrap: function(u) { return u; },
-            parse: function(r) { return r.json(); }
-        },
-        {
-            name: 'corsproxy.io',
-            wrap: function(u) { return 'https://corsproxy.io/?' + encodeURIComponent(u); },
-            parse: function(r) { return r.json(); }
-        },
-        {
-            name: 'allorigins.win',
-            wrap: function(u) { return 'https://api.allorigins.win/raw?url=' + encodeURIComponent(u); },
-            parse: function(r) { return r.json(); }
-        },
-        {
-            name: 'cors.sh',
-            wrap: function(u) { return 'https://cors.sh/' + u; },
-            parse: function(r) { return r.json(); }
-        }
-    ];
+    async function executeSearch() {
+        const query = document.getElementById('query-input').value.trim();
+        if (!query) return;
 
-    async function fetchServers() {
-        const anilistId = document.getElementById('anilist-id').value.trim();
-        const episode   = document.getElementById('episode-num').value.trim();
-
-        if (!anilistId || !episode) {
-            log('Please fill in both fields.', 'warn');
-            return;
-        }
-
-        clearLog();
-        document.getElementById('servers-section').style.display = 'none';
-        document.getElementById('raw-section').style.display = 'none';
-        document.getElementById('server-list').innerHTML = '';
-        document.getElementById('open-api-btn').style.display = 'none';
-
-        const targetUrl = API_BASE + '/' + anilistId + '/' + episode;
-        log('Target: ' + targetUrl, 'info');
-        log('iframes & Android OkHttp are CORS-free. Proxy is only needed for browser fetch.', 'ok');
-
-        const btn = document.getElementById('fetch-btn');
+        log(`Executing search for "${query}" on ${activeProvider.toUpperCase()}...`, 'info');
+        const btn = document.getElementById('search-btn');
         btn.disabled = true;
-        btn.innerHTML = '<span class="spinner"></span> Trying proxies...';
 
-        let succeeded = false;
-
-        for (var i = 0; i < CORS_PROXIES.length; i++) {
-            var proxy = CORS_PROXIES[i];
-            var proxyUrl = proxy.wrap(targetUrl);
-            var label = proxy.name === 'direct' ? 'direct' : 'via ' + proxy.name;
-            log('[' + (i+1) + '/' + CORS_PROXIES.length + '] Trying ' + label + '...', 'info');
-
-            try {
-                var res = await fetch(proxyUrl, {
-                    method: 'GET',
-                    headers: { 'Accept': 'application/json' },
-                    signal: AbortSignal.timeout(7000)
-                });
-                if (!res.ok) throw new Error('HTTP ' + res.status);
-                var data = await proxy.parse(res);
-                if (!data || !data.servers) throw new Error('Unexpected response shape');
-                log('[' + label + '] SUCCESS — servers=' + data.servers.length, 'ok');
-                renderServers(data);
-                renderRaw(data);
-                succeeded = true;
-                break;
-            } catch (err) {
-                log('[' + label + '] failed: ' + err.message, 'error');
-            }
-        }
-
-        if (!succeeded) {
-            log('All proxies failed. Android OkHttp in the app will still work perfectly.', 'warn');
-            log('For manual test: open the API URL in a new tab, copy a dataLink, paste it in the section below.', 'info');
-            var openBtn = document.getElementById('open-api-btn');
-            openBtn.style.display = 'flex';
-            openBtn.onclick = function() { window.open(targetUrl, '_blank'); };
+        if (activeProvider === 'mangadex') {
+            await fetchMangaDex(query);
+        } else {
+            await fetchMangaPillSample();
         }
 
         btn.disabled = false;
-        btn.textContent = '\u25B6 Fetch Servers (auto proxy)';
     }
 
-    function showManualInstructions(id, ep) {
-        var apiUrl = API_BASE + '/' + id + '/' + ep;
-        log('MANUAL TEST: Open this URL in a new tab: ' + apiUrl, 'info');
-        log('Then paste a dataLink into the Manual Embed URL Test section below.', 'info');
+    // ── MangaDex Direct API ───────────────────────────────────────────────────
+    async function fetchMangaDex(query) {
+        try {
+            // 1. Search Manga ID
+            const searchUrl = `https://api.mangadex.org/manga?title=${encodeURIComponent(query)}&limit=1`;
+            const searchRes = await fetch(searchUrl);
+            const searchData = await searchRes.json();
+
+            if (!searchData.data || searchData.data.length === 0) {
+                log(`No manga found for "${query}" on MangaDex`, 'warn');
+                return;
+            }
+
+            const manga = searchData.data[0];
+            const mangaId = manga.id;
+            const title = manga.attributes.title.en || manga.attributes.title.romaji || query;
+            log(`Found MangaDex Manga: "${title}" (ID: ${mangaId})`, 'ok');
+
+            // 2. Fetch Chapters Feed
+            const feedUrl = `https://api.mangadex.org/manga/${mangaId}/feed?translatedLanguage[]=en&order[chapter]=asc&contentRating[]=safe&contentRating[]=suggestive&limit=100`;
+            const feedRes = await fetch(feedUrl);
+            const feedData = await feedRes.json();
+
+            if (!feedData.data || feedData.data.length === 0) {
+                log(`No English chapters found for "${title}"`, 'warn');
+                return;
+            }
+
+            currentChapters = feedData.data.map(ch => ({
+                id: ch.id,
+                chapterNum: ch.attributes.chapter || '1',
+                title: ch.attributes.title || `Chapter ${ch.attributes.chapter || '1'}`
+            })).filter(c => c.id);
+
+            log(`Retrieved ${currentChapters.length} chapter(s).`, 'ok');
+
+            // Render Dropdown
+            const select = document.getElementById('chapter-dropdown');
+            select.innerHTML = '';
+            currentChapters.forEach((ch, idx) => {
+                const opt = document.createElement('option');
+                opt.value = ch.id;
+                opt.textContent = `Ch. ${ch.chapterNum} - ${ch.title}`;
+                select.appendChild(opt);
+            });
+
+            document.getElementById('chapter-select-container').style.display = 'flex';
+            loadSelectedChapter();
+
+        } catch (err) {
+            log(`MangaDex fetch error: ${err.message}`, 'error');
+        }
     }
 
+    async function loadSelectedChapter() {
+        const chapterId = document.getElementById('chapter-dropdown').value;
+        if (!chapterId) return;
 
+        const selectedChapter = currentChapters.find(c => c.id === chapterId);
+        log(`Fetching pages for Chapter ID: ${chapterId}...`, 'info');
 
-    function renderServers(data) {
-        if (!data.success || !data.servers || data.servers.length === 0) {
-            log('No servers returned or success=false.', 'warn');
-            return;
+        try {
+            const atHomeUrl = `https://api.mangadex.org/at-home/server/${chapterId}`;
+            const res = await fetch(atHomeUrl);
+            const data = await res.json();
+
+            if (!data.chapter || !data.chapter.data || data.chapter.data.length === 0) {
+                log(`No page images available for this chapter on MangaDex (may be external publisher link).`, 'warn');
+                return;
+            }
+
+            const baseUrl = data.baseUrl;
+            const hash = data.chapter.hash;
+            const filenames = data.chapter.data;
+
+            const pageUrls = filenames.map(fn => `${baseUrl}/data/${hash}/${fn}`);
+            log(`Successfully fetched ${pageUrls.length} high-res pages!`, 'ok');
+
+            renderPages(pageUrls, `Chapter ${selectedChapter?.chapterNum || ''} - ${selectedChapter?.title || ''}`);
+
+        } catch (err) {
+            log(`Error fetching chapter pages: ${err.message}`, 'error');
+        }
+    }
+
+    // ── MangaPill Sample Loader ─────────────────────────────────────────────
+    async function fetchMangaPillSample() {
+        log(`Loading verified sample pages for MangaPill (Chainsaw Man Ch. 1)...`, 'info');
+        
+        // Direct verified image URLs for Chainsaw Man Chapter 1 on MangaPill CDN
+        const cdnBase = "https://cdn.readdetectiveconan.com/file/mangap/723/10001000";
+        const samplePages = [];
+        for (let i = 1; i <= 25; i++) {
+            samplePages.push(`${cdnBase}/${i}.jpeg?t=1663049146`);
         }
 
-        const list = document.getElementById('server-list');
-        list.innerHTML = '';
+        log(`Prepared ${samplePages.length} MangaPill sample pages. Testing referrer policy...`, 'ok');
+        renderPages(samplePages, "MangaPill - Chainsaw Man Chapter 1");
+    }
 
-        data.servers.forEach(function(server) {
-            const card = document.createElement('div');
-            card.className = 'server-card';
-            card.id = 'sc-' + server.$id;
-            card.innerHTML =
-                '<div class="sc-name">' + server.serverName + '</div>' +
-                '<div class="sc-meta">' +
-                    '<span class="tag ' + (server.dataType === 'sub' ? 'tag-sub' : 'tag-dub') + '">' + server.dataType.toUpperCase() + '</span>' +
-                    (server.softsub ? '<span class="tag" style="background:rgba(255,255,255,0.06);color:var(--text-dim);border:1px solid var(--border);">SOFTSUB</span>' : '') +
-                '</div>';
-            card.onclick = function() { loadServer(server); };
-            list.appendChild(card);
+    // ── Page Renderer ────────────────────────────────────────────────────────
+    function renderPages(urls, title) {
+        const container = document.getElementById('page-container');
+        container.innerHTML = '';
+
+        document.getElementById('reader-header').style.display = 'flex';
+        document.getElementById('reader-title').textContent = title;
+        document.getElementById('page-count-badge').textContent = `${urls.length} Pages`;
+
+        const policy = document.getElementById('ref-policy').value;
+
+        urls.forEach((url, idx) => {
+            const wrapper = document.createElement('div');
+            wrapper.style.display = 'flex';
+            wrapper.style.flexDirection = 'column';
+            wrapper.style.alignItems = 'center';
+
+            const tag = document.createElement('div');
+            tag.className = 'page-number-tag';
+            tag.textContent = `Page ${idx + 1} of ${urls.length}`;
+
+            const img = document.createElement('img');
+            img.className = 'manga-page-img';
+            img.src = url;
+            img.alt = `Page ${idx + 1}`;
+            img.setAttribute('referrerpolicy', policy);
+
+            img.onload = () => {
+                if (idx === 0) log(`Page 1 rendered successfully with referrerpolicy="${policy}"`, 'ok');
+            };
+
+            img.onerror = () => {
+                log(`Image Page ${idx + 1} failed to load! Referrer policy "${policy}" may be blocked by Cloudflare.`, 'error');
+            };
+
+            wrapper.appendChild(tag);
+            wrapper.appendChild(img);
+            container.appendChild(wrapper);
         });
 
-        document.getElementById('servers-section').style.display = 'block';
-        log('Rendered ' + data.servers.length + ' server(s).', 'ok');
-
-        // Auto-load first sub
-        var firstSub = data.servers.find(function(s) { return s.dataType === 'sub'; }) || data.servers[0];
-        if (firstSub) {
-            log('Auto-loading: ' + firstSub.serverName + ' (' + firstSub.dataType + ')', 'info');
-            loadServer(firstSub);
-        }
+        log(`Injected ${urls.length} pages into reader viewport. Scroll down to view.`, 'info');
     }
 
-    function loadServer(server) {
-        document.querySelectorAll('.server-card').forEach(function(c) { c.classList.remove('active'); });
-        var card = document.getElementById('sc-' + server.$id);
-        if (card) card.classList.add('active');
-        log('Loading: ' + server.serverName + ' (' + server.dataType + ') -> ' + server.dataLink, 'info');
-        setPlayerUrl(server.dataLink, server.serverName + ' - ' + server.dataType.toUpperCase(), 'origin');
+    function updateReferrerPolicy() {
+        const policy = document.getElementById('ref-policy').value;
+        log(`Referrer policy updated to "${policy}". Re-applying to images...`, 'warn');
+        document.querySelectorAll('.manga-page-img').forEach(img => {
+            img.setAttribute('referrerpolicy', policy);
+        });
     }
 
-    function playManual(refPolicy) {
-        var url = document.getElementById('manual-url').value.trim();
-        if (!url) { log('Paste a dataLink first.', 'warn'); return; }
-        log('Manual load [referrerpolicy="' + refPolicy + '"]: ' + url, 'info');
-        setPlayerUrl(url, 'Manual - ref=' + refPolicy, refPolicy);
+    function scrollToTop() {
+        document.getElementById('page-container').scrollTo({ top: 0, behavior: 'smooth' });
     }
 
-    function setPlayerUrl(url, label, refPolicy) {
-        refPolicy = refPolicy || 'origin';
-        activeRefPolicy = refPolicy;
-
-        var wrapper = document.querySelector('.player-wrapper');
-        var existing = document.getElementById('player-iframe');
-        if (existing) existing.remove();
-
-        var placeholder = document.getElementById('player-placeholder');
-        if (placeholder) placeholder.style.display = 'none';
-
-        document.getElementById('player-info').innerHTML = '<strong>' + label + '</strong> <span style="font-size:10px;color:var(--text-dim);">(ref=' + refPolicy + ')</span>';
-        document.getElementById('player-url-display').textContent = url;
-        document.getElementById('player-url-display').title = url;
-
-        var iframe = document.createElement('iframe');
-        iframe.id = 'player-iframe';
-        iframe.src = url;
-        iframe.setAttribute('allowfullscreen', 'true');
-        iframe.setAttribute('allow', 'autoplay; encrypted-media; fullscreen; picture-in-picture');
-        iframe.setAttribute('scrolling', 'no');
-        iframe.setAttribute('referrerpolicy', refPolicy);
-
-        iframe.onload = function() {
-            log('iframe onload for: ' + url, 'ok');
-            log('If player UI is visible -> referrer accepted! If black/broken -> try a different ref mode.', 'warn');
-        };
-        iframe.onerror = function() {
-            log('iframe onerror for: ' + url, 'error');
-        };
-
-        wrapper.appendChild(iframe);
-        log('iframe injected with referrerpolicy="' + refPolicy + '"', 'ok');
-    }
-
-    function renderRaw(data) {
-        document.getElementById('raw-json').textContent = JSON.stringify(data, null, 2);
-        document.getElementById('raw-section').style.display = 'block';
-    }
-
-    function copyUrl() {
-        var url = document.getElementById('player-url-display').textContent;
-        if (url && url !== '\u2014') {
-            navigator.clipboard.writeText(url).then(function() { log('URL copied.', 'ok'); });
-        }
-    }
-
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Enter' && (e.target.id === 'anilist-id' || e.target.id === 'episode-num')) {
-            fetchServers();
-        }
-    });
-
-    log('Test page loaded. Default referrerpolicy=origin on all iframes.', 'ok');
-    log('Tip: AniList ID 21 + ep 1000 = One Piece (same as the docs example).', 'info');
-    log('If CORS blocks the API fetch, open the API URL directly in browser and paste dataLinks manually.', 'warn');
+    log('Manga Sandbox initialized.', 'ok');
 </script>
 </body>
 </html>
